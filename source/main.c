@@ -13,10 +13,15 @@ uint32_t task1Env[1024];
 uint32_t task2Env[1024];
 uint32_t idleTaskEnv[1024];
 
+uint32_t tickCount;
+
+// This schedual function can be invoked by irq or task, so needs to to be protected.
 void tTaskSchedual()
 {
+    // Make sure taskTable won't be chagned. Rule is global variable should be protected.
+    uint32_t status = tTaskEnterCritical();
+
     // To decide which task is the next task
-    int i;
     if (currentTask == idleTask)
     {
         if (taskTable[0]->systemTickCount == 0)
@@ -29,6 +34,8 @@ void tTaskSchedual()
         }
         else
         {
+            // Here is return, so must exit the critical sector
+            tTaskExitCritical(status);
             return;
         }
     }
@@ -46,6 +53,7 @@ void tTaskSchedual()
             }
             else
             {
+                tTaskExitCritical(status);
                 return;
             }
         }
@@ -61,18 +69,25 @@ void tTaskSchedual()
             }
             else
             {
+                tTaskExitCritical(status);
                 return;
             }
         }
     }
     
     taskSwitch();
+    
+    tTaskExitCritical(status);
 }
 
 void setTaskDelay(uint32_t delay)
 {
+    uint32_t status = tTaskEnterCritical();
     currentTask->systemTickCount = delay;
+    tTaskExitCritical(status);
+    
     tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
+    
 }
 
 void tSetSysTickPeriod(uint32_t ms)
@@ -87,6 +102,8 @@ void tSetSysTickPeriod(uint32_t ms)
 void tTaskSystemTickHandler()
 {
     int i;
+    
+    uint32_t status = tTaskEnterCritical();
     for(i=0; i<2; i++)
     {
         if(taskTable[i]->systemTickCount > 0)
@@ -95,12 +112,17 @@ void tTaskSystemTickHandler()
         }
     }
     
+    tTaskExitCritical(status);
+    
     tTaskSchedual();
 }
 
 void SysTick_Handler()
 {
     tTaskSystemTickHandler();
+    
+    // Doesn't have to put EnterCritical here because task will never preempt irq in this demo
+    tickCount++;
 }
 
 int task1Flag;
@@ -109,6 +131,15 @@ void task1Entry(void* param)
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     for(;;)
     {
+        int i;
+        int count = tickCount;
+        uint32_t status = tTaskEnterCritical();
+        
+        for(i=0; i<0xffff; i++){}
+        count = count + 1;
+        
+        tTaskExitCritical(status);
+            
         task1Flag = 0;
         setTaskDelay(1);
         task1Flag = 1;
