@@ -1,32 +1,78 @@
 #include "tinyOS.h"
 
-void delay (int count)
-{
-	while (--count > 0);
-}
-
 tTask * currentTask;
 tTask * nextTask;
+tTask * idleTask;
 tTask * taskTable[2];
 
 tTask tTask1;
 tTask tTask2;
+tTask tIdleTask;
 
 uint32_t task1Env[1024];
 uint32_t task2Env[1024];
+uint32_t idleTaskEnv[1024];
 
 void tTaskSchedual()
 {
-    if (currentTask == taskTable[0])
+    // To decide which task is the next task
+    int i;
+    if (currentTask == idleTask)
     {
-        nextTask = taskTable[1];
+        if (taskTable[0]->systemTickCount == 0)
+        {
+            nextTask = taskTable[0];
+        }
+        else if (taskTable[1]->systemTickCount == 0)
+        {
+            nextTask = taskTable[1];
+        }
+        else
+        {
+            return;
+        }
     }
-    else
+    else 
     {
-        nextTask = taskTable[0];
+        if (currentTask == taskTable[0])
+        {
+            if (taskTable[1]->systemTickCount == 0)
+            {
+                nextTask = taskTable[1];
+            }
+            else if (currentTask->systemTickCount > 0)
+            {
+                nextTask = idleTask;
+            }
+            else
+            {
+                return;
+            }
+        }
+        else if (currentTask == taskTable[1])
+        {
+            if (taskTable[0]->systemTickCount == 0)
+            {
+                nextTask = taskTable[0];
+            }
+            else if (currentTask->systemTickCount > 0)
+            {
+                nextTask = idleTask;
+            }
+            else
+            {
+                return;
+            }
+        }
     }
     
     taskSwitch();
+}
+
+void setTaskDelay(uint32_t delay)
+{
+    currentTask->systemTickCount = delay;
+    tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
 }
 
 void tSetSysTickPeriod(uint32_t ms)
@@ -38,21 +84,35 @@ void tSetSysTickPeriod(uint32_t ms)
                     SysTick_CTRL_ENABLE_Msk;
 }
 
+void tTaskSystemTickHandler()
+{
+    int i;
+    for(i=0; i<2; i++)
+    {
+        if(taskTable[i]->systemTickCount > 0)
+        {
+            taskTable[i]->systemTickCount--;
+        }
+    }
+    
+    tTaskSchedual();
+}
+
 void SysTick_Handler()
 {
-    tTaskSchedual();
+    tTaskSystemTickHandler();
 }
 
 int task1Flag;
 void task1Entry(void* param)
 {
-    tSetSysTickPeriod(10);
+    tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     for(;;)
     {
         task1Flag = 0;
-        delay(100);
+        setTaskDelay(1);
         task1Flag = 1;
-        delay(100);
+        setTaskDelay(1);
     }
 }
 
@@ -62,11 +122,18 @@ void task2Entry(void *param)
     for(;;)
     {
         task2Flag = 0;
-        delay(100);
+        setTaskDelay(1);
         task2Flag = 1;
-        delay(100);
-    }
-    
+        setTaskDelay(1);
+    }   
+}
+
+void idleTaskEntry(void* param)
+{
+    for(;;)
+    {
+        
+    }    
 }
 
 //task point; entry function; param; stack space.
@@ -95,7 +162,7 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t *stack)
     
     // now stack addr is &tTask->stack[1024] - 4 * 16. So when switching task, we need to use LDMIA to restore these registers' value
     task->stack = stack;
-
+    task->systemTickCount = 0;
 }
 
 
@@ -103,9 +170,12 @@ int main()
 {
     tTaskInit(&tTask1, task1Entry, (void*)0x11111111, &task1Env[1024]);
     tTaskInit(&tTask2, task2Entry, (void*)0x22222222, &task2Env[1024]);
+    tTaskInit(&tIdleTask, idleTaskEntry, (void*)0, &idleTaskEnv[1024]);
     
     taskTable[0] = &tTask1;
     taskTable[1] = &tTask2;
+    
+    idleTask = &tIdleTask;
     
     nextTask = taskTable[0];
     

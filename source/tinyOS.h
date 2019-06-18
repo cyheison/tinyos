@@ -15,6 +15,7 @@
 typedef struct
 {
     uint32_t * stack;
+    uint32_t systemTickCount;
 }tTask;
 
 extern tTask * nextTask;
