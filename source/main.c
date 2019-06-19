@@ -1,4 +1,5 @@
 #include "tinyOS.h"
+#include "tLib.h"
 
 tTask * currentTask;
 tTask * nextTask;
@@ -163,49 +164,7 @@ void SysTick_Handler()
     tTaskSystemTickHandler();
 }
 
-int task1Flag;
-void task1Entry(void* param)
-{
-    tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-    for(;;)
-    {
-        int count;
-        
-        // Add lock to prevent task schedual
-        tTaskSchedDisable();
-        
-        count = tickCount;          
-        task1Flag = 0;
-        
-        // This delay will cause the task sched
-        setTaskDelay(1);
-        
-        count++;
-        tickCount = count;
-        
-        // Release the sched lock
-        tTaskSchedEnable();
-        
-        task1Flag = 1;
-        setTaskDelay(1);
-    }
-}
 
-int task2Flag;
-void task2Entry(void *param)
-{
-    for(;;)
-    {
-        tTaskSchedDisable();
-        tickCount++;
-        tTaskSchedEnable();
-
-        task2Flag = 0;
-        setTaskDelay(1);
-        task2Flag = 1;
-        setTaskDelay(1);
-    }   
-}
 
 void idleTaskEntry(void* param)
 {
@@ -242,8 +201,55 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t *stack)
     // now stack addr is &tTask->stack[1024] - 4 * 16. So when switching task, we need to use LDMIA to restore these registers' value
     task->stack = stack;
     task->systemTickCount = 0;
+    
+
 }
 
+tBitMap bitMap;
+int task1Flag;
+uint8_t pos = 0;
+void task1Entry(void* param)
+{
+    int i;
+    
+    tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
+    
+    // Init the bitMap
+    bitMapInit(&bitMap);
+    
+    for (i=bitMapGetPosCount() - 1; i>=0; i--)
+    {
+        bitMapSet(&bitMap, i);
+        pos = bitMapGetFirstSet(&bitMap);
+    }
+    
+    for (; i<bitMapGetPosCount(); i++)
+    {
+        bitMapClear(&bitMap, i);
+        pos = bitMapGetFirstSet(&bitMap);
+    }
+
+    for(;;)
+    {      
+        task1Flag = 0;        
+        // This delay will cause the task sched
+        setTaskDelay(1);        
+        task1Flag = 1;
+        setTaskDelay(1);
+    }
+}
+
+int task2Flag;
+void task2Entry(void *param)
+{
+    for(;;)
+    {
+        task2Flag = 0;
+        setTaskDelay(1);
+        task2Flag = 1;
+        setTaskDelay(1);
+    }   
+}
 
 int main()
 {
