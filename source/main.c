@@ -15,11 +15,52 @@ uint32_t idleTaskEnv[1024];
 
 uint32_t tickCount;
 
+uint8_t schedLockCount;
+
+void tTaskSchedInit()
+{
+    schedLockCount = 0;
+}
+
+void tTaskSchedDisable()
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    if (schedLockCount < 255)
+    {
+        schedLockCount++;
+    }
+    
+    tTaskExitCritical(status);
+}
+
+void tTaskSchedEnable()
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    if (schedLockCount > 0)
+    {
+        if (--schedLockCount == 0)
+        {
+            tTaskSchedual();
+        }
+    }
+    
+    tTaskExitCritical(status);
+}
+
 // This schedual function can be invoked by irq or task, so needs to to be protected.
 void tTaskSchedual()
 {
     // Make sure taskTable won't be chagned. Rule is global variable should be protected.
     uint32_t status = tTaskEnterCritical();
+    
+    // If task in locked, then we should never permit the task schedual
+    if (schedLockCount > 0)
+    {
+        tTaskExitCritical(status);
+        return;
+    }
 
     // To decide which task is the next task
     if (currentTask == idleTask)
@@ -120,9 +161,6 @@ void tTaskSystemTickHandler()
 void SysTick_Handler()
 {
     tTaskSystemTickHandler();
-    
-    // Doesn't have to put EnterCritical here because task will never preempt irq in this demo
-    tickCount++;
 }
 
 int task1Flag;
@@ -131,17 +169,23 @@ void task1Entry(void* param)
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     for(;;)
     {
-        int i;
-        int count = tickCount;
-        uint32_t status = tTaskEnterCritical();
+        int count;
         
-        for(i=0; i<0xffff; i++){}
-        count = count + 1;
+        // Add lock to prevent task schedual
+        tTaskSchedDisable();
         
-        tTaskExitCritical(status);
-            
+        count = tickCount;          
         task1Flag = 0;
+        
+        // This delay will cause the task sched
         setTaskDelay(1);
+        
+        count++;
+        tickCount = count;
+        
+        // Release the sched lock
+        tTaskSchedEnable();
+        
         task1Flag = 1;
         setTaskDelay(1);
     }
@@ -152,6 +196,10 @@ void task2Entry(void *param)
 {
     for(;;)
     {
+        tTaskSchedDisable();
+        tickCount++;
+        tTaskSchedEnable();
+
         task2Flag = 0;
         setTaskDelay(1);
         task2Flag = 1;
@@ -199,6 +247,10 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t *stack)
 
 int main()
 {
+    // Init the sched lock
+    tTaskSchedInit();
+    
+    // Init tasks
     tTaskInit(&tTask1, task1Entry, (void*)0x11111111, &task1Env[1024]);
     tTaskInit(&tTask2, task2Entry, (void*)0x22222222, &task2Env[1024]);
     tTaskInit(&tIdleTask, idleTaskEntry, (void*)0, &idleTaskEnv[1024]);

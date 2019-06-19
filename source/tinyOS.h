@@ -25,5 +25,13 @@ void tTaskRunFirst(void);
 void taskSwitch(void);
 uint32_t tTaskEnterCritical(void);
 void tTaskExitCritical(uint32_t status);
+void tTaskSchedInit(void);
+
+void tTaskSchedDisable(void);
+
+void tTaskSchedEnable(void);
+
+// This schedual function can be invoked by irq or task, so needs to to be protected.
+void tTaskSchedual(void);
 
 #endif
