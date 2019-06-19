@@ -3,6 +3,7 @@
 
 #include "stdint.h"
 #include "ARMCM3.h"
+#include "config.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000
@@ -16,6 +17,7 @@ typedef struct
 {
     uint32_t * stack;
     uint32_t systemTickCount;
+    uint32_t pri;
 }tTask;
 
 extern tTask * nextTask;

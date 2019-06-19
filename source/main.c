@@ -4,7 +4,8 @@
 tTask * currentTask;
 tTask * nextTask;
 tTask * idleTask;
-tTask * taskTable[2];
+tTask * taskPriTable[TINYOS_PRI_COUNT];
+tBitMap taskBitMap;
 
 tTask tTask1;
 tTask tTask2;
@@ -21,6 +22,7 @@ uint8_t schedLockCount;
 void tTaskSchedInit()
 {
     schedLockCount = 0;
+    bitMapInit(&taskBitMap);
 }
 
 void tTaskSchedDisable()
@@ -50,9 +52,17 @@ void tTaskSchedEnable()
     tTaskExitCritical(status);
 }
 
+tTask* findHighestPriTask()
+{
+    uint8_t pos = bitMapGetFirstSet(&taskBitMap);
+    return taskPriTable[pos];
+}
+
 // This schedual function can be invoked by irq or task, so needs to to be protected.
 void tTaskSchedual()
 {
+    tTask* tempTask;
+    
     // Make sure taskTable won't be chagned. Rule is global variable should be protected.
     uint32_t status = tTaskEnterCritical();
     
@@ -63,61 +73,13 @@ void tTaskSchedual()
         return;
     }
 
-    // To decide which task is the next task
-    if (currentTask == idleTask)
+    tempTask = findHighestPriTask();
+    if (currentTask != tempTask)
     {
-        if (taskTable[0]->systemTickCount == 0)
-        {
-            nextTask = taskTable[0];
-        }
-        else if (taskTable[1]->systemTickCount == 0)
-        {
-            nextTask = taskTable[1];
-        }
-        else
-        {
-            // Here is return, so must exit the critical sector
-            tTaskExitCritical(status);
-            return;
-        }
+        nextTask = tempTask;
+        // In this function, currentTask will be assigned.
+        taskSwitch();       
     }
-    else 
-    {
-        if (currentTask == taskTable[0])
-        {
-            if (taskTable[1]->systemTickCount == 0)
-            {
-                nextTask = taskTable[1];
-            }
-            else if (currentTask->systemTickCount > 0)
-            {
-                nextTask = idleTask;
-            }
-            else
-            {
-                tTaskExitCritical(status);
-                return;
-            }
-        }
-        else if (currentTask == taskTable[1])
-        {
-            if (taskTable[0]->systemTickCount == 0)
-            {
-                nextTask = taskTable[0];
-            }
-            else if (currentTask->systemTickCount > 0)
-            {
-                nextTask = idleTask;
-            }
-            else
-            {
-                tTaskExitCritical(status);
-                return;
-            }
-        }
-    }
-    
-    taskSwitch();
     
     tTaskExitCritical(status);
 }
@@ -126,10 +88,11 @@ void setTaskDelay(uint32_t delay)
 {
     uint32_t status = tTaskEnterCritical();
     currentTask->systemTickCount = delay;
+    // We must delete this task from table, so that this task won't occupy CPU. So that findHighestPriTask() won't find it.
+    bitMapClear(&taskBitMap, currentTask->pri);
     tTaskExitCritical(status);
     
     tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
-    
 }
 
 void tSetSysTickPeriod(uint32_t ms)
@@ -146,11 +109,16 @@ void tTaskSystemTickHandler()
     int i;
     
     uint32_t status = tTaskEnterCritical();
-    for(i=0; i<2; i++)
+    for(i=0; i<TINYOS_PRI_COUNT; i++)
     {
-        if(taskTable[i]->systemTickCount > 0)
+        if(taskPriTable[i]->systemTickCount > 0)
         {
-            taskTable[i]->systemTickCount--;
+            taskPriTable[i]->systemTickCount--;
+        }
+        else
+        {
+            // If delay timer timeout, we should set its bitMap so that findHighestPriTask() can find it.
+            bitMapSet(&taskBitMap, i);
         }
     }
     
@@ -165,17 +133,8 @@ void SysTick_Handler()
 }
 
 
-
-void idleTaskEntry(void* param)
-{
-    for(;;)
-    {
-        
-    }    
-}
-
 //task point; entry function; param; stack space.
-void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t *stack)
+void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uint32_t *stack)
 {   
     //init the stack. when converting task, these values will pop into registers
     //will be stored automaticaly
@@ -202,32 +161,20 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t *stack)
     task->stack = stack;
     task->systemTickCount = 0;
     
-
+    // Init pri
+    task->pri = pri;
+    
+    // Init taskBitMap
+    bitMapSet(&taskBitMap, pri);
+    
+    // Init taskPriTable   
+    taskPriTable[pri] = task;
 }
 
-tBitMap bitMap;
 int task1Flag;
-uint8_t pos = 0;
 void task1Entry(void* param)
 {
-    int i;
-    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-    
-    // Init the bitMap
-    bitMapInit(&bitMap);
-    
-    for (i=bitMapGetPosCount() - 1; i>=0; i--)
-    {
-        bitMapSet(&bitMap, i);
-        pos = bitMapGetFirstSet(&bitMap);
-    }
-    
-    for (; i<bitMapGetPosCount(); i++)
-    {
-        bitMapClear(&bitMap, i);
-        pos = bitMapGetFirstSet(&bitMap);
-    }
 
     for(;;)
     {      
@@ -251,26 +198,29 @@ void task2Entry(void *param)
     }   
 }
 
+void idleTaskEntry(void* param)
+{
+    for(;;)
+    { 
+    }    
+}
+
 int main()
 {
     // Init the sched lock
     tTaskSchedInit();
     
     // Init tasks
-    tTaskInit(&tTask1, task1Entry, (void*)0x11111111, &task1Env[1024]);
-    tTaskInit(&tTask2, task2Entry, (void*)0x22222222, &task2Env[1024]);
-    tTaskInit(&tIdleTask, idleTaskEntry, (void*)0, &idleTaskEnv[1024]);
-    
-    taskTable[0] = &tTask1;
-    taskTable[1] = &tTask2;
+    tTaskInit(&tTask1,      task1Entry, (void*)0x11111111, 0, &task1Env[1024]);
+    tTaskInit(&tTask2,      task2Entry, (void*)0x22222222, 1, &task2Env[1024]);
+    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[1024]);
     
     idleTask = &tIdleTask;
     
-    nextTask = taskTable[0];
+    nextTask = findHighestPriTask();
     
     tTaskRunFirst();
     
     // will never run to this
     return 0;
-
 }
