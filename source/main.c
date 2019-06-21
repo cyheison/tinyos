@@ -3,7 +3,6 @@
 
 tTask * currentTask;
 tTask * nextTask;
-tTask * idleTask;
 tTask * taskPriTable[TINYOS_PRI_COUNT];
 tBitMap taskBitMap;
 
@@ -172,10 +171,24 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uin
 }
 
 int task1Flag;
+tList list;
+tNode node[3];
 void task1Entry(void* param)
 {
+    int i;
+    listInit(&list);
+    for (i=0; i<3; i++)
+    {
+        nodeInit(&node[i]);
+        tListAddFirst(&list, &node[i]);
+    }
+    
+    //for (i=0; i<8; i++)
+    {
+        listRemoveAll(&list);
+    }
+    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-
     for(;;)
     {      
         task1Flag = 0;        
@@ -214,9 +227,7 @@ int main()
     tTaskInit(&tTask1,      task1Entry, (void*)0x11111111, 0, &task1Env[1024]);
     tTaskInit(&tTask2,      task2Entry, (void*)0x22222222, 1, &task2Env[1024]);
     tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[1024]);
-    
-    idleTask = &tIdleTask;
-    
+       
     nextTask = findHighestPriTask();
     
     tTaskRunFirst();
