@@ -20,6 +20,7 @@ typedef struct
     uint32_t nodeCount;
 }tList;
 
+// node is the known var, parent is the type, name is the releativ var for node in parent
 #define tNodeParent(node, parent, name)     (parent*)((uint32_t)node - (uint32_t)&((parent*)0)->name)
 
 void bitMapInit(tBitMap * pBitMap);
