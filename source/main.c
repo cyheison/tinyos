@@ -18,11 +18,20 @@ uint32_t tickCount;
 
 uint8_t schedLockCount;
 
+tList delayList;
+
 void tTaskSchedInit()
 {
     schedLockCount = 0;
     bitMapInit(&taskBitMap);
 }
+
+// All delayed tasks should be put into a list
+void taskDelayInit(void)
+{
+    listInit(&delayList);
+}
+
 
 void tTaskSchedDisable()
 {
@@ -57,6 +66,32 @@ tTask* findHighestPriTask()
     return taskPriTable[pos];
 }
 
+void timedTaskWait(tTask* task, uint32_t tick)
+{
+    // Add the delay task into delayList
+    task->systemTickCount = tick;
+    listAddLast(&delayList, &task->delayNode);
+    task->state = TINYOS_TASK_STATE_DELAY;
+    
+    // Then clear this task in the taskPriTable
+    // We can delete this sentance
+    taskPriTable[task->pri] = (tTask*)0;
+    bitMapClear(&taskBitMap, task->pri);
+}
+
+void timedTaskWakeUp(tTask* task)
+{
+    // First we need to remove the timeout task from the delayList
+    listRemove(&delayList, &task->delayNode);
+    task->state &= ~TINYOS_TASK_STATE_DELAY; 
+    
+    // Then we need to set taskPriTable to mark this task as ready 
+    // We can delete this sentance because we only use bitMap per the priority to search the task. We don't use taskPriTable to search task.
+    taskPriTable[task->pri] = task;
+    bitMapSet(&taskBitMap, task->pri);
+}
+
+
 // This schedual function can be invoked by irq or task, so needs to to be protected.
 void tTaskSchedual()
 {
@@ -72,6 +107,7 @@ void tTaskSchedual()
         return;
     }
 
+    // All tasks will be collected into array that every time core will find the highest priority task to execute
     tempTask = findHighestPriTask();
     if (currentTask != tempTask)
     {
@@ -86,9 +122,10 @@ void tTaskSchedual()
 void setTaskDelay(uint32_t delay)
 {
     uint32_t status = tTaskEnterCritical();
-    currentTask->systemTickCount = delay;
-    // We must delete this task from table, so that this task won't occupy CPU. So that findHighestPriTask() won't find it.
-    bitMapClear(&taskBitMap, currentTask->pri);
+    
+    // We put this timed delay task into delayList
+    timedTaskWait(currentTask, delay);
+    
     tTaskExitCritical(status);
     
     tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
@@ -105,19 +142,18 @@ void tSetSysTickPeriod(uint32_t ms)
 
 void tTaskSystemTickHandler()
 {
-    int i;
+    tNode* node;
     
     uint32_t status = tTaskEnterCritical();
-    for(i=0; i<TINYOS_PRI_COUNT; i++)
+    
+    // Here only need to scan the tasks who need to delay. If tasks don't have delay, then we don't need to scan them
+    for (node=delayList.node.nextNode; node!=&delayList.node; node=node->nextNode)
     {
-        if(taskPriTable[i]->systemTickCount > 0)
+        // From the delayNode we can find the its according task
+        tTask* task = tNodeParent(node, tTask, delayNode);
+        if (--task->systemTickCount == 0)
         {
-            taskPriTable[i]->systemTickCount--;
-        }
-        else
-        {
-            // If delay timer timeout, we should set its bitMap so that findHighestPriTask() can find it.
-            bitMapSet(&taskBitMap, i);
+            timedTaskWakeUp(task);
         }
     }
     
@@ -171,29 +207,15 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uin
 }
 
 int task1Flag;
-tList list;
-tNode node[3];
 void task1Entry(void* param)
 {
-    int i;
-    listInit(&list);
-    for (i=0; i<3; i++)
-    {
-        nodeInit(&node[i]);
-        tListAddFirst(&list, &node[i]);
-    }
-    
-    //for (i=0; i<8; i++)
-    {
-        listRemoveAll(&list);
-    }
-    
+
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     for(;;)
     {      
         task1Flag = 0;        
         // This delay will cause the task sched
-        setTaskDelay(1);        
+        setTaskDelay(1); 
         task1Flag = 1;
         setTaskDelay(1);
     }
@@ -222,6 +244,8 @@ int main()
 {
     // Init the sched lock
     tTaskSchedInit();
+    
+    taskDelayInit();
     
     // Init tasks
     tTaskInit(&tTask1,      task1Entry, (void*)0x11111111, 0, &task1Env[1024]);

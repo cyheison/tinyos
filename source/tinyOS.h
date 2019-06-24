@@ -4,6 +4,7 @@
 #include "stdint.h"
 #include "ARMCM3.h"
 #include "config.h"
+#include "tLib.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000
@@ -13,11 +14,16 @@
 #define mem32(addr)                 *(volatile uint32_t *)(addr)
 //#define mem8(addr)                  *(unsigned char *)(addr)
 
+#define TINYOS_TASK_STATE_RDY           0
+#define TINYOS_TASK_STATE_DELAY         (1<<1)
+
 typedef struct
 {
-    uint32_t * stack;
-    uint32_t systemTickCount;
-    uint32_t pri;
+    uint32_t*   stack;
+    uint32_t    systemTickCount;
+    uint32_t    pri;
+    tNode       delayNode;
+    uint32_t    state;
 }tTask;
 
 extern tTask * nextTask;
