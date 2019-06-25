@@ -16,6 +16,7 @@
 
 #define TINYOS_TASK_STATE_RDY           0
 #define TINYOS_TASK_STATE_DELAY         (1<<1)
+#define TINYOS_TASK_STATE_SUSPEND       (1<<2)
 
 typedef struct
 {
@@ -25,6 +26,7 @@ typedef struct
     uint32_t    slice;    // When tasks have the same priority, slice number shows that how long they can occupy the CPU. Now the default time is 100ms  
     uint32_t    pri;
     tNode       delayNode;
+    uint32_t    suspendCount; // Used to record how many times that this task has been suspended. Usually we only suspend a task once.
     uint32_t    state;
 }tTask;
 
@@ -52,6 +54,8 @@ void initApp(void);
 void taskSchedUnReady(tTask* task);
 void taskSchedReady(tTask* task);
 void setTaskDelay(uint32_t delay);
+void taskSuspend(tTask* task);
+void taskWakeupFromSuspend(tTask* task);
 
 
 

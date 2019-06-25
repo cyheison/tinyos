@@ -8,13 +8,6 @@ uint32_t task1Env[1024];
 uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 
-void timedDelay()
-{
-    int i;
-    
-    for (i=0; i<0xff; i++){}
-}
-
 int task1Flag;
 void task1Entry(void* param)
 {
@@ -24,9 +17,11 @@ void task1Entry(void* param)
     {      
         task1Flag = 0;        
         // To make sure this task is running per the slice
-        setTaskDelay(1);
+        //setTaskDelay(1);
+        taskSuspend(&tTask1);
         task1Flag = 1;
-        setTaskDelay(1);
+        //setTaskDelay(1);
+        taskSuspend(&tTask1);
     }
 }
 
@@ -36,9 +31,12 @@ void task2Entry(void *param)
     for(;;)
     {
         task2Flag = 0;
-        timedDelay();
+        setTaskDelay(1);
+        taskWakeupFromSuspend(&tTask1);
+
         task2Flag = 1;
-        timedDelay();
+        setTaskDelay(1);
+        taskWakeupFromSuspend(&tTask1);
     }   
 }
 
@@ -48,9 +46,9 @@ void task3Entry(void *param)
     for(;;)
     {
         task3Flag = 0;
-        timedDelay();
+        setTaskDelay(1);
         task3Flag = 1;
-        timedDelay();
+        setTaskDelay(1);
     }   
 }
 

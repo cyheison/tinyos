@@ -38,3 +38,45 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uin
         
     taskSchedReady(task);
 }
+
+void taskSuspend(tTask* task)
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    // When task in on timed delay state, we shouldn't suspend it
+    if (!(task->state & TINYOS_TASK_STATE_DELAY))
+    {
+        // We suspend the task only once
+        if (++task->suspendCount <= 1)
+        {
+            taskSchedUnReady(task);
+            task->state = TINYOS_TASK_STATE_SUSPEND;
+            
+            // We need to switch to another task asap
+            if (task == currentTask)
+            {
+                tTaskSchedual();
+            }
+        }
+    }
+    
+    tTaskExitCritical(status);
+}
+
+void taskWakeupFromSuspend(tTask* task)
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    if (task->state & TINYOS_TASK_STATE_SUSPEND)
+    {
+        // When this count reduced to 0, then we can wake up it
+        if (--task->suspendCount == 0)
+        {
+            taskSchedReady(task);
+            task->state = TINYOS_TASK_STATE_RDY;
+            tTaskSchedual();
+        }
+    }
+    
+    tTaskExitCritical(status);
+}
