@@ -35,6 +35,15 @@ typedef struct
     uint8_t requestDeleteFlag; // Flag for the request of deleting task
 }tTask;
 
+typedef struct 
+{
+    uint32_t delayTicks;
+    uint32_t pri;
+    uint32_t state;
+    uint32_t slice;
+    uint32_t suspendCount;
+}tTaskInfo;
+
 extern tTask * nextTask;
 extern tTask * currentTask;
 
@@ -68,6 +77,7 @@ void taskForceDelete(tTask* task);
 void taskRequestDelete(tTask* task);
 uint8_t taskRequestDeleteFlag(tTask* task);
 void taskDeleteSelf(tTask* task);
+void taskInfoGet(tTask* task, tTaskInfo* taskInfo);
 
 
 #endif

@@ -163,4 +163,13 @@ void taskDeleteSelf(tTask* task)
     tTaskExitCritical(status);
 }
 
+void taskInfoGet(tTask* task, tTaskInfo* taskInfo)
+{
+    taskInfo->delayTicks    = task->systemTickCount;
+    taskInfo->pri           = task->pri;
+    taskInfo->slice         = task->slice;
+    taskInfo->state         = task->state;
+    taskInfo->suspendCount  = task->suspendCount;
+}
+
 

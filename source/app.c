@@ -12,20 +12,19 @@ uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
 int task1Flag;
-void task1Clean(void* param)
-{
-    // Simulate the clean function
-    task1Flag = 0;
-}
-
 void task1Entry(void* param)
-{
-    taskRegisterCleanFunc(currentTask, task1Clean, (void*)0);
-    
+{  
+    tTaskInfo taskInfo;
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
     for(;;)
     {      
+        // Get slef task info
+        taskInfoGet(currentTask, &taskInfo);
+        
+        // Get other task info
+        taskInfoGet(&tTask4, &taskInfo);
+        
         task1Flag = 0;        
         // To make sure this task is running per the slice
         setTaskDelay(1);
@@ -36,66 +35,37 @@ void task1Entry(void* param)
 
 int task2Flag;
 void task2Entry(void *param)
-{
-    // Used to mark that whether task1 has been deleted
-    uint8_t deleted = 0;
-    
+{   
     for(;;)
     {
         task2Flag = 0;
         setTaskDelay(1);
         task2Flag = 1;
         setTaskDelay(1);
-        
-        if (!deleted)
-        {
-            taskForceDelete(&tTask1);
-            deleted = 1;
-        }
     }   
 }
 
 int task3Flag;
-void task3Clean(void* param)
-{    
-    task3Flag = 0;
-}
-
 void task3Entry(void *param)
 {
-    taskRegisterCleanFunc(currentTask, task3Clean, (void*)0);
     for(;;)
     {
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
         setTaskDelay(1);
-        
-        if (taskRequestDeleteFlag(&tTask3))
-        {
-            taskDeleteSelf(&tTask3);
-        }
     }   
 }
 
 int task4Flag;
 void task4Entry(void *param)
-{
-    uint8_t deleted = 0;
-    
+{    
     for(;;)
     {
         task4Flag = 0;
         setTaskDelay(1);
         task4Flag = 1;
-        setTaskDelay(1);
-        
-        if (!deleted)
-        {
-            // Request to delete task3. So in task3 it needs to query that whether it has been requested to be deleted.
-            taskRequestDelete(&tTask3);
-            deleted = 1;
-        }
+        setTaskDelay(1);   
     }   
 }
 
