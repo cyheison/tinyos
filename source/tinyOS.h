@@ -28,6 +28,11 @@ typedef struct
     tNode       delayNode;
     uint32_t    suspendCount; // Used to record how many times that this task has been suspended. Usually we only suspend a task once.
     uint32_t    state;
+    
+    // Used for task clean
+    void (*clean)(void*);
+    void* cleanParam;
+    uint8_t requestDeleteFlag; // Flag for the request of deleting task
 }tTask;
 
 extern tTask * nextTask;
@@ -56,7 +61,13 @@ void taskSchedReady(tTask* task);
 void setTaskDelay(uint32_t delay);
 void taskSuspend(tTask* task);
 void taskWakeupFromSuspend(tTask* task);
-
+void taskDelayedDelete(tTask* task);
+void taskSchedDelete(tTask* task);
+void taskRegisterCleanFunc(tTask* task, void (*clean)(void*), void* param);
+void taskForceDelete(tTask* task);
+void taskRequestDelete(tTask* task);
+uint8_t taskRequestDeleteFlag(tTask* task);
+void taskDeleteSelf(tTask* task);
 
 
 #endif

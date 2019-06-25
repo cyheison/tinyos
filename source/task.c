@@ -31,6 +31,10 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uin
     task->slice = TINYOS_TASK_CLICE_COUNT;
     task->pri = pri;
     task->state = TINYOS_TASK_STATE_RDY;
+    task->suspendCount = 0;
+    task->clean = (void (*)(void*))0;
+    task->cleanParam = (void*)0;
+    task->requestDeleteFlag = 0;
     
     // Initialize the nodes in this task
     nodeInit(&task->delayNode);
@@ -80,3 +84,83 @@ void taskWakeupFromSuspend(tTask* task)
     
     tTaskExitCritical(status);
 }
+
+// Provide interface for app layer to register clean function
+void taskRegisterCleanFunc(tTask* task, void (*clean)(void*), void* param)
+{
+    task->clean = clean;
+    task->cleanParam = param;
+}
+
+// task force delete
+void taskForceDelete(tTask* task)
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    if (task->state == TINYOS_TASK_STATE_DELAY)
+    {
+        taskDelayedDelete(task);
+    }
+    else if (!(task->state == TINYOS_TASK_STATE_SUSPEND))
+    {
+        taskSchedDelete(task);
+    }
+    
+    if (task->clean)
+    {
+        task->clean(task->cleanParam);
+    }
+    
+    if (task == currentTask)
+    {
+        tTaskSchedual();
+    }
+    
+    tTaskExitCritical(status);
+}
+
+// Task request delete
+void taskRequestDelete(tTask* task)
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    task->requestDeleteFlag = 1;
+    
+    tTaskExitCritical(status);
+}
+
+// Check the task request delete flag
+uint8_t taskRequestDeleteFlag(tTask* task)
+{
+    uint8_t delete;
+    
+    uint32_t status = tTaskEnterCritical();
+    
+    delete = task->requestDeleteFlag;
+    
+    tTaskExitCritical(status);
+    
+    return delete;
+}
+
+void taskDeleteSelf(tTask* task)
+{
+    uint32_t status = tTaskEnterCritical();
+    
+    // Because task in delayList won't be going here, so only need to delete the tasks that are in sched list.
+    taskSchedDelete(task);
+    
+    if (task->clean)
+    {
+        task->clean(task->cleanParam);
+    }
+    
+    if (task == currentTask)
+    {
+        tTaskSchedual();
+    }
+    
+    tTaskExitCritical(status);
+}
+
+

@@ -94,6 +94,22 @@ void taskSchedUnReady(tTask* task)
     }
 }
 
+// Delete task from the sched task table
+void taskSchedDelete(tTask* task)
+{
+    listRemove(&taskPriTable[task->pri], &task->linkNode);
+    if (listCount(&taskPriTable[task->pri]) == 0)
+    {
+        bitMapClear(&taskBitMap, task->pri);
+    }
+}
+
+// Delete task from the delay list
+void taskDelayedDelete(tTask* task)
+{
+    listRemove(&delayList, &task->delayNode);
+}
+
 
 // When task is in sleep state, we need to add them into delayList
 void timedTaskWait(tTask* task, uint32_t tick)
