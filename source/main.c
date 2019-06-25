@@ -7,16 +7,10 @@ tList   taskPriTable[TINYOS_PRI_COUNT]; // This list only store the tasks that i
 tList   delayList; // This list only store the tasks which are sleeping
 tBitMap taskBitMap;
 
-tTask tTask1;
-tTask tTask2;
-tTask tTask3;
+
 tTask tIdleTask;
 
-uint32_t task1Env[1024];
-uint32_t task2Env[1024];
-uint32_t task3Env[1024];
-
-uint32_t idleTaskEnv[1024];
+uint32_t idleTaskEnv[TINYOS_STACK_SIZE];
 
 uint32_t tickCount;
 
@@ -104,7 +98,6 @@ void taskSchedUnReady(tTask* task)
 // When task is in sleep state, we need to add them into delayList
 void timedTaskWait(tTask* task, uint32_t tick)
 {
-    tNode* node;
     // Add the delay task into delayList
     task->systemTickCount = tick;
     listAddLast(&delayList, &task->delayNode);
@@ -148,28 +141,6 @@ void tTaskSchedual()
     tTaskExitCritical(status);
 }
 
-void setTaskDelay(uint32_t delay)
-{
-    uint32_t status = tTaskEnterCritical();
-    
-    // We put this timed delay task into delayList
-    timedTaskWait(currentTask, delay);
-    
-    taskSchedUnReady(currentTask);
-    
-    tTaskExitCritical(status);
-    
-    tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
-}
-
-void tSetSysTickPeriod(uint32_t ms)
-{
-    SysTick->LOAD = ms * SystemCoreClock / 1000 - 1;
-    NVIC_SetPriority(SysTick_IRQn, (1<<__NVIC_PRIO_BITS) - 1);
-    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |
-                    SysTick_CTRL_TICKINT_Msk | 
-                    SysTick_CTRL_ENABLE_Msk;
-}
 
 void tTaskSystemTickHandler()
 {
@@ -210,101 +181,6 @@ void tTaskSystemTickHandler()
     tTaskSchedual();
 }
 
-void SysTick_Handler()
-{
-    tTaskSystemTickHandler();
-}
-
-
-//task point; entry function; param; stack space.
-// Init all the components in a task
-void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uint32_t *stack)
-{   
-    //init the stack. when converting task, these values will pop into registers
-    //will be stored automaticaly
-    *(--stack) = (uint32_t)(1<<24);//xPSR
-    *(--stack) = (uint32_t)entry;//PC
-    *(--stack) = (uint32_t)0x14;//LR
-    *(--stack) = (uint32_t)0x12;
-    *(--stack) = (uint32_t)0x3;
-    *(--stack) = (uint32_t)0x2;
-    *(--stack) = (uint32_t)0x1;
-    *(--stack) = (uint32_t)param;
-    
-    // need to store manually
-    *(--stack) = (uint32_t)0x11;
-    *(--stack) = (uint32_t)0x10;
-    *(--stack) = (uint32_t)0x9;
-    *(--stack) = (uint32_t)0x8;
-    *(--stack) = (uint32_t)0x7;
-    *(--stack) = (uint32_t)0x6;
-    *(--stack) = (uint32_t)0x5;
-    *(--stack) = (uint32_t)0x4;
-    
-    // now stack addr is &tTask->stack[1024] - 4 * 16. So when switching task, we need to use LDMIA to restore these registers' value
-    task->stack = stack;
-    task->systemTickCount = 0;
-    
-    task->slice = TINYOS_TASK_CLICE_COUNT;
-    
-    // Initialize the nodes in this task
-    nodeInit(&task->delayNode);
-    nodeInit(&task->linkNode);
-    listAddFirst(&taskPriTable[pri], &task->linkNode);
-    
-    // Init pri
-    task->pri = pri;
-    
-    // Init taskBitMap
-    bitMapSet(&taskBitMap, pri);
-}
-
-void timedDelay()
-{
-    int i;
-    
-    for (i=0; i<0xff; i++){}
-}
-
-int task1Flag;
-void task1Entry(void* param)
-{
-
-    tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-    for(;;)
-    {      
-        task1Flag = 0;        
-        // To make sure this task is running per the slice
-        setTaskDelay(1);
-        task1Flag = 1;
-        setTaskDelay(1);
-    }
-}
-
-int task2Flag;
-void task2Entry(void *param)
-{
-    for(;;)
-    {
-        task2Flag = 0;
-        timedDelay();
-        task2Flag = 1;
-        timedDelay();
-    }   
-}
-
-int task3Flag;
-void task3Entry(void *param)
-{
-    for(;;)
-    {
-        task3Flag = 0;
-        timedDelay();
-        task3Flag = 1;
-        timedDelay();
-    }   
-}
-
 void idleTaskEntry(void* param)
 {
     for(;;)
@@ -317,14 +193,9 @@ int main()
     // Init the sched lock
     tTaskSchedInit();
     
-    //taskDelayInit();
-    
-    // Init tasks
-    tTaskInit(&tTask1,      task1Entry, (void*)0x11111111, 0, &task1Env[1024]);
-    tTaskInit(&tTask2,      task2Entry, (void*)0x22222222, 1, &task2Env[1024]);
-    tTaskInit(&tTask3,      task3Entry, (void*)0x33333333, 1, &task3Env[1024]);
-    
-    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[1024]);
+    initApp();
+ 
+    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[TINYOS_STACK_SIZE]);
        
     nextTask = findHighestPriTask();
     

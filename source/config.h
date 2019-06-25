@@ -5,4 +5,6 @@
 
 #define TINYOS_TASK_CLICE_COUNT     10
 
+#define TINYOS_STACK_SIZE           1024
+
 #endif

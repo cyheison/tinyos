@@ -43,5 +43,16 @@ void tTaskSchedEnable(void);
 
 // This schedual function can be invoked by irq or task, so needs to to be protected.
 void tTaskSchedual(void);
+void tTaskSystemTickHandler(void);
+void timedTaskWakeUp(tTask* task);
+void timedTaskWait(tTask* task, uint32_t tick);
+void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uint32_t *stack);
+void tSetSysTickPeriod(uint32_t ms);
+void initApp(void);
+void taskSchedUnReady(tTask* task);
+void taskSchedReady(tTask* task);
+void setTaskDelay(uint32_t delay);
+
+
 
 #endif
