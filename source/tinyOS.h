@@ -5,6 +5,7 @@
 #include "ARMCM3.h"
 #include "config.h"
 #include "tLib.h"
+#include "event.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000
@@ -17,6 +18,11 @@
 #define TINYOS_TASK_STATE_RDY           0
 #define TINYOS_TASK_STATE_DELAY         (1<<1)
 #define TINYOS_TASK_STATE_SUSPEND       (1<<2)
+
+typedef enum
+{   
+    noError = 0,
+}errorNum;
 
 typedef struct
 {
@@ -33,6 +39,11 @@ typedef struct
     void (*clean)(void*);
     void* cleanParam;
     uint8_t requestDeleteFlag; // Flag for the request of deleting task
+    
+    // Task event
+    tEvent* waitEvent; // This task is waiting for what event
+    void* eventMsg; // Used in mail
+    errorNum eventResult;
 }tTask;
 
 typedef struct 
