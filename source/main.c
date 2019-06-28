@@ -172,6 +172,12 @@ void tTaskSystemTickHandler()
         tTask* task = tNodeParent(node, tTask, delayNode);
         if (--task->systemTickCount == 0)
         {
+            // This task is waiting for event
+            if (task->waitEvent)
+            {
+                eventRemoveTask(task, (void*)0, ERROR_TIMEOUT);
+            }
+            
             // Find a currentTask
             timedTaskWakeUp(task);
             

@@ -1,9 +1,9 @@
 #include "tinyos.h"
 
-tTask tTask1;
-tTask tTask2; // In task2, we will force delete task1
+tTask tTask1; // Task1 will wait for an event till to timeout
+tTask tTask2; // Task2 and task3 will wait for an event
 tTask tTask3;
-tTask tTask4; // In task 4, we will request delete task3
+tTask tTask4; // Task4 will trigger the event for task2 and task3
 
 
 uint32_t task1Env[1024];
@@ -11,19 +11,20 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
+tEvent eventTimeOut;
+tEvent eventNormal;
+
 int task1Flag;
 void task1Entry(void* param)
 {  
-    tTaskInfo taskInfo;
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
+    
+    eventInit(&eventTimeOut, eventTypeUnKnown);
     
     for(;;)
     {      
-        // Get slef task info
-        taskInfoGet(currentTask, &taskInfo);
-        
-        // Get other task info
-        taskInfoGet(&tTask4, &taskInfo);
+        eventAddWait(&eventTimeOut, currentTask, (void*)0, 0, 5 );
+        tTaskSchedual();
         
         task1Flag = 0;        
         // To make sure this task is running per the slice
@@ -38,6 +39,9 @@ void task2Entry(void *param)
 {   
     for(;;)
     {
+        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
+        tTaskSchedual();
+        
         task2Flag = 0;
         setTaskDelay(1);
         task2Flag = 1;
@@ -48,8 +52,13 @@ void task2Entry(void *param)
 int task3Flag;
 void task3Entry(void *param)
 {
+    eventInit(&eventNormal, eventTypeUnKnown);
+    
     for(;;)
     {
+        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
+        tTaskSchedual();
+        
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
@@ -62,6 +71,9 @@ void task4Entry(void *param)
 {    
     for(;;)
     {
+        tTask* task = eventWakeUp(&eventNormal, (void*)0, 0); // Use task4 to wakeup eventNormal, then task2 and task3 are waiting for this event.
+        tTaskSchedual();
+        
         task4Flag = 0;
         setTaskDelay(1);
         task4Flag = 1;

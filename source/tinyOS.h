@@ -4,8 +4,8 @@
 #include "ARMCM3.h"
 #include "config.h"
 #include "tLib.h"
-#include "event.h"
 #include "task.h"
+#include "event.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000
@@ -14,6 +14,12 @@
 
 #define mem32(addr)                 *(volatile uint32_t *)(addr)
 //#define mem8(addr)                  *(unsigned char *)(addr)
+
+typedef enum
+{   
+    ERROR_NOERROR = 0,
+    ERROR_TIMEOUT = 1,
+}errorNum;
 
 extern tTask * nextTask;
 extern tTask * currentTask;

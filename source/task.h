@@ -6,10 +6,10 @@
 #define TINYOS_TASK_STATE_DELAY         (1<<2)
 #define TINYOS_TASK_STATE_SUSPEND       (1<<3)
 
-typedef enum
-{   
-    noError = 0,
-}errorNum;
+// Reserve high 16bis to event
+#define TINYOS_TASK_WAIT_MASK           (0xff<<16)
+
+struct _tEvent;
 
 typedef struct
 {
@@ -28,9 +28,9 @@ typedef struct
     uint8_t requestDeleteFlag; // Flag for the request of deleting task
     
     // Task event
-    tEvent* waitEvent; // This task is waiting for what event
+    struct _tEvent* waitEvent; // This task is waiting for what event
     void* eventMsg; // Used in mail
-    errorNum eventResult;
+    uint32_t eventResult;
 }tTask;
 
 typedef struct 
