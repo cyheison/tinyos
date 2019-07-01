@@ -20,5 +20,7 @@ void eventInit(tEvent* event, tEventType eventType);
 void eventAddWait(tEvent* event, tTask* task, void* msg, uint32_t state, uint32_t timeOut);
 tTask* eventWakeUp(tEvent* event, void* msg, uint32_t result);
 void eventRemoveTask(tTask* task, void* msg, uint32_t result);
+uint32_t eventRemoveAll(tEvent* event, void* msg, uint32_t result);
+uint32_t eventWaitCount(tEvent* event);
 
 #endif

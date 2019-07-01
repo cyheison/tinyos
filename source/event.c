@@ -12,7 +12,7 @@ void eventAddWait(tEvent* event, tTask* task, void* msg, uint32_t state, uint32_
     uint32_t status = tTaskEnterCritical();
     
     task->eventMsg = msg;
-    task->waitEvent = event;
+    task->waitEvent = event;// combine event and task
     task->state |= state;// For the future use, use |
     task->eventResult = ERROR_NOERROR;
     
@@ -75,4 +75,51 @@ void eventRemoveTask(tTask* task, void* msg, uint32_t result)
     listRemove(&task->waitEvent->waitList, &task->linkNode);
     
     tTaskExitCritical(status);
+}
+
+// Remove every task from the event list to sched list and timed delay list
+uint32_t eventRemoveAll(tEvent* event, void* msg, uint32_t result)
+{
+    uint32_t count;
+    tNode* node;
+    tTask* task;
+    
+    uint32_t status = tTaskEnterCritical();
+    
+    count = listCount(&event->waitList);
+    
+    while ((node=listRemoveFirst(&event->waitList)) != (tNode*)0)
+    {
+        task = tNodeParent(node, tTask, linkNode);
+        task->eventMsg = msg;
+        task->waitEvent = (tEvent*)0;
+        task->eventResult = result;
+        task->state &= ~TINYOS_TASK_WAIT_MASK;
+        
+        if (task->systemTickCount != 0)
+        {
+            // If this task is in the delay list, we should wake up it
+            timedTaskWakeUp(task);
+        }
+
+        // Put this task into sched list
+        taskSchedReady(task);
+    }
+    
+    tTaskExitCritical(status);
+    
+    return count;
+}
+
+// How many tasks waiting in the list
+uint32_t eventWaitCount(tEvent* event)
+{
+    uint32_t count;
+    uint32_t status = tTaskEnterCritical();
+    
+    count = listCount(&event->waitList);
+    
+    tTaskExitCritical(status);
+    
+    return count;
 }

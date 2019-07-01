@@ -1,9 +1,9 @@
 #include "tinyos.h"
 
-tTask tTask1; // Task1 will wait for an event till to timeout
-tTask tTask2; // Task2 and task3 will wait for an event
+tTask tTask1; // task1 will remove all of the event
+tTask tTask2; // task2,3,4 will be added into the same event
 tTask tTask3;
-tTask tTask4; // Task4 will trigger the event for task2 and task3
+tTask tTask4; 
 
 
 uint32_t task1Env[1024];
@@ -11,7 +11,6 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tEvent eventTimeOut;
 tEvent eventNormal;
 
 int task1Flag;
@@ -19,12 +18,20 @@ void task1Entry(void* param)
 {  
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
-    eventInit(&eventTimeOut, eventTypeUnKnown);
+    eventInit(&eventNormal, eventTypeUnKnown);
     
     for(;;)
-    {      
-        eventAddWait(&eventTimeOut, currentTask, (void*)0, 0, 5 );
-        tTaskSchedual();
+    {   
+        // First we test how many tasks have been in the eventList
+        uint32_t waitCount = eventWaitCount(&eventNormal);
+        uint32_t wakeUpCount = eventRemoveAll(&eventNormal, (void*)0, 0);
+        
+        // Wait until task2,3,4 all have been added into wait list, then we will delete all of them
+        if (wakeUpCount > 0)
+        {
+            tTaskSchedual();
+            wakeUpCount = eventWaitCount(&eventNormal);
+        }
         
         task1Flag = 0;        
         // To make sure this task is running per the slice
@@ -52,7 +59,6 @@ void task2Entry(void *param)
 int task3Flag;
 void task3Entry(void *param)
 {
-    eventInit(&eventNormal, eventTypeUnKnown);
     
     for(;;)
     {
@@ -71,7 +77,7 @@ void task4Entry(void *param)
 {    
     for(;;)
     {
-        tTask* task = eventWakeUp(&eventNormal, (void*)0, 0); // Use task4 to wakeup eventNormal, then task2 and task3 are waiting for this event.
+        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
         tTaskSchedual();
         
         task4Flag = 0;
@@ -86,7 +92,7 @@ void initApp()
     // Init tasks
     tTaskInit(&tTask1,      task1Entry, (void*)0x11111111, 0, &task1Env[1024]);
     tTaskInit(&tTask2,      task2Entry, (void*)0x22222222, 1, &task2Env[1024]);
-    tTaskInit(&tTask3,      task3Entry, (void*)0x33333333, 0, &task3Env[1024]);
+    tTaskInit(&tTask3,      task3Entry, (void*)0x33333333, 1, &task3Env[1024]);
     tTaskInit(&tTask4,      task4Entry, (void*)0x44444444, 1, &task4Env[1024]);
 
 }

@@ -14,7 +14,7 @@ struct _tEvent;
 typedef struct
 {
     uint32_t*   stack;
-    uint32_t    systemTickCount;
+    uint32_t    systemTickCount; // Delay ticks for this task
     tNode       linkNode; // tasks shoule be added into a list when they have same priority
     uint32_t    slice;    // When tasks have the same priority, slice number shows that how long they can occupy the CPU. Now the default time is 100ms  
     uint32_t    pri;
