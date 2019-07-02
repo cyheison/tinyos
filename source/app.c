@@ -11,28 +11,17 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tEvent eventNormal;
+tSem sem;
 
 int task1Flag;
 void task1Entry(void* param)
 {  
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
-    eventInit(&eventNormal, eventTypeUnKnown);
+    semInit(&sem, 1, 10);
     
     for(;;)
     {   
-        // First we test how many tasks have been in the eventList
-        uint32_t waitCount = eventWaitCount(&eventNormal);
-        uint32_t wakeUpCount = eventRemoveAll(&eventNormal, (void*)0, 0);
-        
-        // Wait until task2,3,4 all have been added into wait list, then we will delete all of them
-        if (wakeUpCount > 0)
-        {
-            tTaskSchedual();
-            wakeUpCount = eventWaitCount(&eventNormal);
-        }
-        
         task1Flag = 0;        
         // To make sure this task is running per the slice
         setTaskDelay(1);
@@ -46,9 +35,6 @@ void task2Entry(void *param)
 {   
     for(;;)
     {
-        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
-        tTaskSchedual();
-        
         task2Flag = 0;
         setTaskDelay(1);
         task2Flag = 1;
@@ -62,9 +48,6 @@ void task3Entry(void *param)
     
     for(;;)
     {
-        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
-        tTaskSchedual();
-        
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
@@ -77,9 +60,6 @@ void task4Entry(void *param)
 {    
     for(;;)
     {
-        eventAddWait(&eventNormal, currentTask, (void*)0, 0, 0);
-        tTaskSchedual();
-        
         task4Flag = 0;
         setTaskDelay(1);
         task4Flag = 1;
