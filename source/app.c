@@ -11,17 +11,20 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tSem sem;
+tSem sem1; // No timeout waiting
+tSem sem2; // have timeout waiting
 
 int task1Flag;
 void task1Entry(void* param)
 {  
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
-    semInit(&sem, 1, 10);
+    semInit(&sem1, 0, 10);
     
     for(;;)
     {   
+        semWait(&sem1, 0);
+        
         task1Flag = 0;        
         // To make sure this task is running per the slice
         setTaskDelay(1);
@@ -39,15 +42,21 @@ void task2Entry(void *param)
         setTaskDelay(1);
         task2Flag = 1;
         setTaskDelay(1);
+        
+        semNotify(&sem1);
     }   
 }
 
 int task3Flag;
 void task3Entry(void *param)
 {
+    semInit(&sem2, 0, 0);
     
     for(;;)
     {
+        // Wait 10 ticks at most
+        semWait(&sem2, 10);
+        
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;

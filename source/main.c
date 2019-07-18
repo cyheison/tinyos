@@ -61,7 +61,7 @@ void tTaskSchedEnable()
     {
         if (--schedLockCount == 0)
         {
-            tTaskSchedual();
+            tTaskSched();
         }
     }
     
@@ -130,7 +130,7 @@ void timedTaskWakeUp(tTask* task)
 
 
 // This schedual function can be invoked by irq or task, so needs to to be protected.
-void tTaskSchedual()
+void tTaskSched()
 {
     tTask* tempTask;
     
@@ -200,7 +200,7 @@ void tTaskSystemTickHandler()
     
     tTaskExitCritical(status);
     
-    tTaskSchedual();
+    tTaskSched();
 }
 
 void idleTaskEntry(void* param)

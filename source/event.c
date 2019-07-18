@@ -13,8 +13,8 @@ void eventAddWait(tEvent* event, tTask* task, void* msg, uint32_t state, uint32_
     
     task->eventMsg = msg;
     task->waitEvent = event;// combine event and task
-    task->state |= state;// For the future use, use |
-    task->eventResult = ERROR_NOERROR;
+    task->state |= state;// Which event, sem or others
+    task->eventWaitResult = ERROR_NOERROR;
     
     // Remove this task from the sched list
     taskSchedUnReady(task);
@@ -44,7 +44,7 @@ tTask* eventWakeUp(tEvent* event, void* msg, uint32_t result)
     {
         task = tNodeParent(node, tTask, linkNode);
         task->eventMsg = msg;
-        task->eventResult = result;
+        task->eventWaitResult = result;
         task->waitEvent = (tEvent*)0; // Don't forget to clean the waitEvent
         task->state &= ~TINYOS_TASK_WAIT_MASK; //
         
@@ -71,7 +71,7 @@ void eventRemoveTask(tTask* task, void* msg, uint32_t result)
     task->eventMsg = msg;
     task->waitEvent = (tEvent*)0;
     task->state &= TINYOS_TASK_WAIT_MASK;// For the future use, use |
-    task->eventResult = result; // error number
+    task->eventWaitResult = result; // error number
     listRemove(&task->waitEvent->waitList, &task->linkNode);
     
     tTaskExitCritical(status);
@@ -93,7 +93,7 @@ uint32_t eventRemoveAll(tEvent* event, void* msg, uint32_t result)
         task = tNodeParent(node, tTask, linkNode);
         task->eventMsg = msg;
         task->waitEvent = (tEvent*)0;
-        task->eventResult = result;
+        task->eventWaitResult = result;
         task->state &= ~TINYOS_TASK_WAIT_MASK;
         
         if (task->systemTickCount != 0)

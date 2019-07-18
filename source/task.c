@@ -59,7 +59,7 @@ void taskSuspend(tTask* task)
             // We need to switch to another task asap
             if (task == currentTask)
             {
-                tTaskSchedual();
+                tTaskSched();
             }
         }
     }
@@ -78,7 +78,7 @@ void taskWakeupFromSuspend(tTask* task)
         {
             taskSchedReady(task);
             task->state = TINYOS_TASK_STATE_RDY;
-            tTaskSchedual();
+            tTaskSched();
         }
     }
     
@@ -113,7 +113,7 @@ void taskForceDelete(tTask* task)
     
     if (task == currentTask)
     {
-        tTaskSchedual();
+        tTaskSched();
     }
     
     tTaskExitCritical(status);
@@ -157,7 +157,7 @@ void taskDeleteSelf(tTask* task)
     
     if (task == currentTask)
     {
-        tTaskSchedual();
+        tTaskSched();
     }
     
     tTaskExitCritical(status);

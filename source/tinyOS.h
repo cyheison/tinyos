@@ -6,6 +6,7 @@
 #include "tLib.h"
 #include "task.h"
 #include "event.h"
+#include "sem.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000
@@ -19,6 +20,8 @@ typedef enum
 {   
     ERROR_NOERROR = 0,
     ERROR_TIMEOUT = 1,
+    ERROR_RSCNOTAVALIABLE = 2, 
+    ERROR_NORESOURCE,
 }errorNum;
 
 extern tTask * nextTask;
@@ -35,7 +38,7 @@ void tTaskSchedDisable(void);
 void tTaskSchedEnable(void);
 
 // This schedual function can be invoked by irq or task, so needs to to be protected.
-void tTaskSchedual(void);
+void tTaskSched(void);
 void tTaskSystemTickHandler(void);
 void timedTaskWait(tTask* task, uint32_t tick);
 

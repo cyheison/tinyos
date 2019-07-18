@@ -11,7 +11,7 @@ void setTaskDelay(uint32_t delay)
     
     tTaskExitCritical(status);
     
-    tTaskSchedual();// When current task is time delay, we should switch to another task to execute immediately
+    tTaskSched();// When current task is time delay, we should switch to another task to execute immediately
 }
 
 
