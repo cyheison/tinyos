@@ -11,8 +11,7 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tSem sem1; // No timeout waiting
-tSem sem2; // have timeout waiting
+tSem sem1; // task1 will waiting sem1, and task2 will check its info then remove it.
 
 int task1Flag;
 void task1Entry(void* param)
@@ -20,11 +19,10 @@ void task1Entry(void* param)
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
     semInit(&sem1, 0, 10);
+    semWait(&sem1, 0);
     
     for(;;)
     {   
-        semWait(&sem1, 0);
-        
         task1Flag = 0;        
         // To make sure this task is running per the slice
         setTaskDelay(1);
@@ -34,8 +32,12 @@ void task1Entry(void* param)
 }
 
 int task2Flag;
+tSemInfo semInfo;
 void task2Entry(void *param)
 {   
+    uint32_t destroyed = 0;
+    
+    
     for(;;)
     {
         task2Flag = 0;
@@ -43,20 +45,21 @@ void task2Entry(void *param)
         task2Flag = 1;
         setTaskDelay(1);
         
-        semNotify(&sem1);
+        if (!destroyed)
+        {
+            semInfoGet(&sem1, &semInfo);
+            semRemoveAll(&sem1);
+            destroyed = 1;
+        }
     }   
 }
 
 int task3Flag;
 void task3Entry(void *param)
 {
-    semInit(&sem2, 0, 0);
-    
+       
     for(;;)
     {
-        // Wait 10 ticks at most
-        semWait(&sem2, 10);
-        
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
