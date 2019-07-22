@@ -13,7 +13,7 @@ void eventAddWait(tEvent* event, tTask* task, void* msg, uint32_t state, uint32_
     
     task->eventMsg = msg;
     task->waitEvent = event;// combine event and task
-    task->state |= state;// Which event, sem or others
+    task->state |= state;// Which event, sem or mbox
     task->eventWaitResult = ERROR_NOERROR;
     
     // Remove this task from the sched list

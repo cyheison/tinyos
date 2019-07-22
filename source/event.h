@@ -8,6 +8,7 @@ typedef enum
 {
     eventTypeUnKnown,
     eventTypeSem,
+    eventTypeMbox,
 }tEventType;
 
 // Waiting task list
