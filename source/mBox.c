@@ -100,7 +100,7 @@ uint8_t mBoxNotify(tMbox* mBox, void* msg, uint8_t notifyOption)
     else
     {
         // No task is waiting, so we need to store this msg in buffer
-        if (notifyOption & tMOXSendFront)
+        if (notifyOption & tMOXSendFront)// The last inserted msg is higher priority
         {
             // Send high priority msg first
             if (mBox->read <= 0)
@@ -117,7 +117,7 @@ uint8_t mBoxNotify(tMbox* mBox, void* msg, uint8_t notifyOption)
         else
         {
             // Normal read
-            mBox->msgBuffer[mBox->write++] = msg;
+            mBox->msgBuffer[mBox->write++] = msg;// The last inserted msg is lowest priority
             
             if (mBox->write >= mBox->maxCount)
             {
@@ -131,4 +131,37 @@ uint8_t mBoxNotify(tMbox* mBox, void* msg, uint8_t notifyOption)
     
     tTaskExitCritical(stats);
     return ERROR_NOERROR;
+}
+
+// Clean up all the msgs in the mail box
+void mBoxFlush(tMbox* mBox)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    // When there are tasks waiting in the list, mail box must be cleaned. So when tasks are empty, msg box may not empty.
+    if (eventWaitCount(&mBox->event) == 0)
+    {
+        mBox->read = 0;
+        mBox->write = 0;
+        mBox->msgCount = 0;
+    }
+    
+    tTaskExitCritical(stats);
+}
+
+uint32_t mBoxRemoveTask(tMbox* mBox)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    uint32_t count = eventRemoveAll(&mBox->event, (void*)0, ERROR_NOERROR);
+    
+    tTaskExitCritical(stats);
+    
+    // The deleted task may be the running task
+    if (count > 0)
+    {
+        tTaskSched();
+    }
+    
+    return count;
 }

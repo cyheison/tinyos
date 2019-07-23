@@ -20,5 +20,7 @@ void mBoxInit(tMbox* mBox, void** msgBuffer, uint32_t maxMsgCount);
 uint8_t mBoxWait(tMbox* mBox, void** msg, uint32_t waitTicks);
 uint8_t mBoxNoWait(tMbox* mBox, void** msg);
 uint8_t mBoxNotify(tMbox* mBox, void* msg, uint8_t notifyOption);
+void mBoxFlush(tMbox* mBox);
+uint32_t mBoxRemoveTask(tMbox* mBox);
 
 #endif
