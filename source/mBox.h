@@ -16,11 +16,19 @@ typedef struct _mBox
     void** msgBuffer; // In this array, every element we store a pointer
 }tMbox;
 
+typedef struct _mBoxInfo
+{
+    uint32_t msgCount;
+    uint32_t maxCount;
+    uint32_t taskCount;
+}tMboxInfo;
+
 void mBoxInit(tMbox* mBox, void** msgBuffer, uint32_t maxMsgCount);
 uint8_t mBoxWait(tMbox* mBox, void** msg, uint32_t waitTicks);
 uint8_t mBoxNoWait(tMbox* mBox, void** msg);
 uint8_t mBoxNotify(tMbox* mBox, void* msg, uint8_t notifyOption);
 void mBoxFlush(tMbox* mBox);
 uint32_t mBoxRemoveTask(tMbox* mBox);
+void mBoxInfoGet(tMbox* mBox, tMboxInfo* mBoxInfo);
 
 #endif

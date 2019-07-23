@@ -165,3 +165,14 @@ uint32_t mBoxRemoveTask(tMbox* mBox)
     
     return count;
 }
+
+void mBoxInfoGet(tMbox* mBox, tMboxInfo* mBoxInfo)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    mBoxInfo->msgCount = mBox->msgCount;
+    mBoxInfo->maxCount = mBox->maxCount;
+    mBoxInfo->taskCount = eventWaitCount(&mBox->event);
+    
+    tTaskExitCritical(stats);
+}

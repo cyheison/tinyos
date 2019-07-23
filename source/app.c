@@ -11,32 +11,32 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tSem sem1; // task1 will waiting sem1, and task2 will check its info then remove it.
+tMbox mBox1;
+void* mBoxMsgBuffer[20];
+uint32_t msg[20];
 
-tMbox mBox1;// task2 will destroy mBox1, so task1 can continue running.
-void* mBoxMsgBuffer1[20];// store pointer in this array
-uint32_t msg1[20];
-
-
-tMbox mBox2;// task3 notify msg at mBox2 and task4 will for this mBox2, when task4 get the msg from mBox2 then it will clean up all the msgs at mBox2.
-void* mBoxMsgBuffer2[20];// store pointer in this array
-uint32_t msg2[20];
 
 int task1Flag;
 void task1Entry(void* param)
 {
-    void* msg;
+    tMboxInfo mBoxInfo;
+    mBoxInit(&mBox1, (void*)mBoxMsgBuffer, 20);
     
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-    
-    mBoxInit(&mBox1, mBoxMsgBuffer1, 20);// 数组的首地址用void*修饰表明数组中存的都是void*变量。
-    mBoxInit(&mBox2, mBoxMsgBuffer2, 20);// 数组的首地址用void*修饰表明数组中存的都是void*变量。
-
-    mBoxWait(&mBox1, (void*)msg, 0); // task1 will be waiting for the mBox1
     
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
+        int i;
+        for (i = 0; i < 2; i++)
+        {
+            msg[i] = i;
+            mBoxInfoGet(&mBox1, &mBoxInfo);
+
+            mBoxNotify(&mBox1, &msg[i], tMOXSendNormal);
+            mBoxInfoGet(&mBox1, &mBoxInfo);
+        }
+        
         task1Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);
@@ -48,36 +48,29 @@ void task1Entry(void* param)
 int task2Flag;
 void task2Entry(void *param)
 {   
-    uint8_t destroyed = 0;
+    void* msg;
     
     for(;;)
     {      
+        mBoxWait(&mBox1, &msg, 0);
+
         task2Flag = 0;
         setTaskDelay(1);
         task2Flag = 1;
         setTaskDelay(1);
         
-        if (!destroyed)
-        {
-            mBoxRemoveTask(&mBox1);
-            destroyed = 1;
-        }
     }   
 }
 
 int task3Flag;
 void task3Entry(void *param)
 {   
+    void* msg;
+
     for(;;)
     {
-        int i = 0;
-        for (i = 0; i < 20; i++)
-        {
-            msg2[i] = i;
-            mBoxNotify(&mBox2, &msg2[i], tMOXSendFront);
-        }
-        
-        
+        mBoxWait(&mBox1, &msg, 0);
+
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
@@ -88,14 +81,16 @@ void task3Entry(void *param)
 int task4Flag;
 void task4Entry(void *param)
 {    
-    void *msg;
+    void* msg;
     
     for(;;)
     {
-        mBoxWait(&mBox2, (void*)&msg, 0);
-        task4Flag = *(uint32_t*)msg;
-        
-        mBoxFlush(&mBox2);
+        mBoxWait(&mBox1, &msg, 0);
+
+        task4Flag = 0;
+        setTaskDelay(1);
+        task4Flag = 1;
+        setTaskDelay(1);
     }   
 }
 
