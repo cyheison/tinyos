@@ -11,31 +11,21 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tMbox mBox1;
-void* mBoxMsgBuffer[20];
-uint32_t msg[20];
+uint8_t mem1[20][100]; // every mem size is 100byte, total is 20
+tMemBlock memBlock;
 
 
 int task1Flag;
 void task1Entry(void* param)
 {
-    tMboxInfo mBoxInfo;
-    mBoxInit(&mBox1, (void*)mBoxMsgBuffer, 20);
-    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
+ 
+    // 这里是将二维数组当做一维数组来看待。将二维数组的地址当做一维数组的地址看待，因为函数中并没有对二维数组取值，只是用了一下该数组的地址值。
+    memBlockInit(&memBlock, (uint8_t*)mem1, 100, 20);
     
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
-        int i;
-        for (i = 0; i < 2; i++)
-        {
-            msg[i] = i;
-            mBoxInfoGet(&mBox1, &mBoxInfo);
-
-            mBoxNotify(&mBox1, &msg[i], tMOXSendNormal);
-            mBoxInfoGet(&mBox1, &mBoxInfo);
-        }
         
         task1Flag = 0;
         // To make sure this task is running per the slice
@@ -48,11 +38,9 @@ void task1Entry(void* param)
 int task2Flag;
 void task2Entry(void *param)
 {   
-    void* msg;
     
     for(;;)
     {      
-        mBoxWait(&mBox1, &msg, 0);
 
         task2Flag = 0;
         setTaskDelay(1);
@@ -65,12 +53,9 @@ void task2Entry(void *param)
 int task3Flag;
 void task3Entry(void *param)
 {   
-    void* msg;
 
     for(;;)
     {
-        mBoxWait(&mBox1, &msg, 0);
-
         task3Flag = 0;
         setTaskDelay(1);
         task3Flag = 1;
@@ -81,12 +66,9 @@ void task3Entry(void *param)
 int task4Flag;
 void task4Entry(void *param)
 {    
-    void* msg;
-    
+   
     for(;;)
     {
-        mBoxWait(&mBox1, &msg, 0);
-
         task4Flag = 0;
         setTaskDelay(1);
         task4Flag = 1;
