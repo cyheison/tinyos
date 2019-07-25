@@ -11,30 +11,15 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-uint8_t mem[20][100];
-tMemBlock memBlock;
-
+tFlagGroup flagGrp;
 
 int task1Flag;
 void task1Entry(void* param)
 {    
-    memBlockInfo info;
-    int i;
-    uint8_t* mem1;
-    
+   
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
- 
-    memBlockInit(&memBlock, (uint8_t*)mem, 100, 20);
-    memInfoGet(&memBlock, &info);
-
-    for (i = 0; i < 20; i++)
-    {
-        // Get all the blocks in the mem block
-        memBlockWait(&memBlock, (uint8_t**)&mem1, 0);
-    }
     
-    // here task1 will enter waiting state.
-    memBlockWait(&memBlock, (uint8_t**)&mem1, 0);
+    flagGroupInit(&flagGrp, 0x0);
 
     // When task1 has been destroyed, then task1 can go here
     for(;;)
@@ -51,17 +36,9 @@ void task1Entry(void* param)
 int task2Flag;
 void task2Entry(void *param)
 {   
-    int destroyed = 0;
     
     for(;;)
     {      
-        if (!destroyed)
-        {
-            // delete the task1 which is waiting for memBlock
-            memBlockDestroy(&memBlock);
-            destroyed = 1;
-        }
-        
         task2Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);

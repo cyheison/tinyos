@@ -10,6 +10,7 @@ typedef enum
     eventTypeSem,
     eventTypeMbox,
     eventTypeMemBlock,
+    eventTypeFlagGroup,
 }tEventType;
 
 // Waiting task list
