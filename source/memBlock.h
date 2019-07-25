@@ -13,6 +13,8 @@ typedef struct _memBlock
 }tMemBlock;
 
 void memBlockInit(tMemBlock* memBlock, uint8_t* memStart, uint32_t blockSize, uint32_t blockCount);
-
+uint32_t memBlockWait(tMemBlock* memBlock, uint8_t** mem, uint32_t waitTicks);
+uint32_t memBlockNoWaitGet(tMemBlock* memBlock, uint8_t** mem);
+void memBlockNotify(tMemBlock* memBlock, uint8_t* mem);
 
 #endif
