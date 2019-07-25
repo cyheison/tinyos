@@ -14,7 +14,7 @@ void memBlockInit(tMemBlock* memBlock, uint8_t* memStart, uint32_t blockSize, ui
     
     eventInit(&memBlock->event, eventTypeMemBlock);
     memBlock->memStart = memStart;
-    memBlock->blockCount = blockCount;
+    memBlock->maxBlockCount = blockCount;
     memBlock->blockSize = blockSize;
     
     listInit(&memBlock->blockList);
@@ -95,4 +95,31 @@ void memBlockNotify(tMemBlock* memBlock, uint8_t* mem)
     tTaskExitCritical(stats);
 }
 
+void memInfoGet(tMemBlock* memBlock, memBlockInfo* memBlockInfo)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    memBlockInfo->blockSize = memBlock->blockSize;
+    memBlockInfo->maxBlockCount = memBlock->maxBlockCount;
+    memBlockInfo->blockCountUsed = listCount(&memBlock->blockList);
+    memBlockInfo->taskCount = eventWaitCount(&memBlock->event);
+    
+    tTaskExitCritical(stats);
+}
+
+uint32_t memBlockDestroy(tMemBlock* memBlock)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    // event 提供了自己的删除等待event的task的函数
+    uint32_t count = eventRemoveAll(&memBlock->event, (void*)0, ERROR_NOERROR);
+    
+    if (count > 0)
+    {
+        tTaskExitCritical(stats);
+        tTaskSched();
+    }
+    
+    return count;
+}
 
