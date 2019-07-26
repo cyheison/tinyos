@@ -19,26 +19,36 @@ void task1Entry(void* param)
    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
-    flagGroupInit(&flagGrp, 0x0);
+    // Set low 16bis all to 1
+    flagGroupInit(&flagGrp, 0xff);
 
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
-        
         task1Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);
         task1Flag = 1;
         setTaskDelay(1);
+        
+        // Notify that bit 2 and 3 have been cleaned
+        flagGroupNotify(&flagGrp, 0, 0x6);
     }
 }
 
 int task2Flag;
 void task2Entry(void *param)
 {   
+    uint32_t resultFlag;
     
     for(;;)
-    {      
+    {
+        // Waiting for bit 2 cleaning up.
+        flagGroupWait(&flagGrp, FLAGGROUP_CLEAR_ALL | FLAGGROUP_CONSUME , 0x4, &resultFlag, 10);
+        
+        // Check the bit 1 and bit 0 have been cleaned.
+        flagGroupNoWaitGet(&flagGrp, FLAGGROUP_CLEAR_ALL, 0x3, &resultFlag);
+        
         task2Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);

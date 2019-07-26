@@ -65,6 +65,35 @@ tTask* eventWakeUp(tEvent* event, void* msg, uint32_t result)
     return task;
 }
 
+// Wake up detailed task
+tTask* eventWakeUpTask(tEvent* event, tTask* task, void* msg, uint32_t result)
+{   
+    uint32_t status = tTaskEnterCritical();
+    
+    // Critical step: from event waiting list delete this task
+    listRemove(&event->waitList, &task->linkNode);
+    
+    task->eventMsg = msg;
+    task->eventWaitResult = result;
+    task->waitEvent = (tEvent*)0; // Don't forget to clean the waitEvent
+    task->state &= ~TINYOS_TASK_WAIT_MASK; //
+        
+    // Check whether this task has delay
+    if (task->systemTickCount > 0)
+    {
+        timedTaskWakeUp(task);
+    }
+    
+    // Add task into sched list
+    taskSchedReady(task);
+    
+    // Here don't need to remove from the delay list because in systick semaphore will do this operation.
+        
+    tTaskExitCritical(status);
+    
+    return task;
+}
+
 void eventRemoveTask(tTask* task, void* msg, uint32_t result)
 {
     uint32_t status = tTaskEnterCritical();

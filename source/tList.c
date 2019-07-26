@@ -1,7 +1,7 @@
  #include "tLib.h"
  
  // When firstNode is being used, then lastNode won't be used. it means that these two macros will only exist one at the same time.
- // If use addfirst, then first will always points to the first node
+ // If use addfirst, then firstNode will always points to the first node
  // If use addlast, then lastNode will always points to the last node
  // That's because we use circle bidirectional linked list.
  #define firstNode node.nextNode // Why nextNode is the first? Because 

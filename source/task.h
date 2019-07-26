@@ -31,6 +31,9 @@ typedef struct
     struct _tEvent* waitEvent; // This task is waiting for what event
     void* eventMsg; // Used in mail
     uint32_t eventWaitResult;
+    
+    uint32_t waitFlagsType; // Wait flags type: set/clear, any/all
+    uint32_t eventFlags;
 }tTask;
 
 typedef struct 
