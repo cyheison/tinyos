@@ -22,6 +22,12 @@ void task1Entry(void* param)
     // Set low 16bis all to 1
     flagGroupInit(&flagGrp, 0xff);
 
+    // switch to task2 to run
+    setTaskDelay(1);
+    
+    flagGroupDestroy(&flagGrp);
+
+
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
@@ -30,9 +36,6 @@ void task1Entry(void* param)
         setTaskDelay(1);
         task1Flag = 1;
         setTaskDelay(1);
-        
-        // Notify that bit 2 and 3 have been cleaned
-        flagGroupNotify(&flagGrp, 0, 0x6);
     }
 }
 
@@ -40,14 +43,16 @@ int task2Flag;
 void task2Entry(void *param)
 {   
     uint32_t resultFlag;
+    flagGroupInfo info;
     
     for(;;)
     {
-        // Waiting for bit 2 cleaning up.
-        flagGroupWait(&flagGrp, FLAGGROUP_CLEAR_ALL | FLAGGROUP_CONSUME , 0x4, &resultFlag, 10);
-        
-        // Check the bit 1 and bit 0 have been cleaned.
-        flagGroupNoWaitGet(&flagGrp, FLAGGROUP_CLEAR_ALL, 0x3, &resultFlag);
+        flagGroupWait(&flagGrp, FLAGGROUP_SET_ALL | FLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
+        flagGroupInfoGet(&flagGrp, &info);
+
+        // here task2 will wait, then task1 destroy flagGrp, then task2 can continue to run
+        flagGroupWait(&flagGrp, FLAGGROUP_SET_ALL | FLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
+
         
         task2Flag = 0;
         // To make sure this task is running per the slice

@@ -148,3 +148,29 @@ void flagGroupNotify(tFlagGroup* flagGrp, uint8_t isSet, uint32_t flags)
         tTaskSched();    
     }
 }
+
+
+void flagGroupInfoGet(tFlagGroup* flagGrp, flagGroupInfo* flagInfo)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    flagInfo->flags = flagGrp->flag;
+    flagInfo->taskCount = eventWaitCount(&flagGrp->event);
+    
+    tTaskExitCritical(stats);
+}
+
+uint32_t flagGroupDestroy(tFlagGroup* flagGrp)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    uint32_t count = eventRemoveAll(&flagGrp->event, (void*)0, ERROR_NOERROR);
+    
+    tTaskExitCritical(stats);
+    
+    if (count > 0)
+    {
+        tTaskSched();
+    }
+}
+

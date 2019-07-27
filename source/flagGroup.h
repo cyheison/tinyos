@@ -9,6 +9,12 @@ typedef struct _flagGroup
     uint32_t flag;
 }tFlagGroup;
 
+typedef struct _flagGroupInfo
+{
+    uint32_t flags;
+    uint32_t taskCount;   
+}flagGroupInfo;
+
 
 #define FLAGGROUP_CLEAR     (0x0 << 0)
 #define FLAGGROUP_SET       (0x1 << 0)
@@ -30,5 +36,7 @@ uint32_t flagGroupWait(tFlagGroup* flagGrp, uint32_t waitType, uint32_t requestF
 uint32_t flagGroupNoWaitGet(tFlagGroup* flagGrp, uint32_t waitType, uint32_t requestFlag, uint32_t* resultFlag);
 void flagGroupNotify(tFlagGroup* flagGrp, uint8_t isSet, uint32_t flag);
 
+void flagGroupInfoGet(tFlagGroup* flagGrp, flagGroupInfo* flagInfo);
+uint32_t flagGroupDestroy(tFlagGroup* flagGrp);
 
 #endif
