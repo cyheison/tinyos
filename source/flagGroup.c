@@ -172,5 +172,7 @@ uint32_t flagGroupDestroy(tFlagGroup* flagGrp)
     {
         tTaskSched();
     }
+    
+    return count;
 }
 

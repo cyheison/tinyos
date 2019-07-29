@@ -10,6 +10,7 @@
 #include "mBox.h"
 #include "memBlock.h"
 #include "flagGroup.h"
+#include "mutex.h"
 
 #define NVIC_INT_CTRL               0xE000Ed04
 #define NVIC_PENDSVSET              0x10000000

@@ -11,7 +11,7 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tFlagGroup flagGrp;
+tMuxte mutex;
 
 int task1Flag;
 void task1Entry(void* param)
@@ -19,14 +19,7 @@ void task1Entry(void* param)
    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
     
-    // Set low 16bis all to 1
-    flagGroupInit(&flagGrp, 0xff);
-
-    // switch to task2 to run
-    setTaskDelay(1);
-    
-    flagGroupDestroy(&flagGrp);
-
+    mutexInit(&mutex);
 
     // When task1 has been destroyed, then task1 can go here
     for(;;)
@@ -42,18 +35,11 @@ void task1Entry(void* param)
 int task2Flag;
 void task2Entry(void *param)
 {   
-    uint32_t resultFlag;
-    flagGroupInfo info;
+
     
     for(;;)
     {
-        flagGroupWait(&flagGrp, FLAGGROUP_SET_ALL | FLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
-        flagGroupInfoGet(&flagGrp, &info);
 
-        // here task2 will wait, then task1 destroy flagGrp, then task2 can continue to run
-        flagGroupWait(&flagGrp, FLAGGROUP_SET_ALL | FLAGGROUP_CONSUME, 0x1, &resultFlag, 0);
-
-        
         task2Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);

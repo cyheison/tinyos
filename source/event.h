@@ -11,6 +11,7 @@ typedef enum
     eventTypeMbox,
     eventTypeMemBlock,
     eventTypeFlagGroup,
+    eventTypeMutex,
 }tEventType;
 
 // Waiting task list
