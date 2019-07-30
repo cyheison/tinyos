@@ -13,14 +13,15 @@ void eventAddWait(tEvent* event, tTask* task, void* msg, uint32_t state, uint32_
     
     task->eventMsg = msg;
     task->waitEvent = event;// combine event and task
-    task->state |= state;// Which event, sem or mbox
+    task->state |= state << 16;// Which event, sem or mbox. only high 16bits is left for event in task.h
     task->eventWaitResult = ERROR_NOERROR;
     
     // Remove this task from the sched list
     taskSchedUnReady(task);
     
     // Add this task into the waiting list
-    listAddLast(&event->waitList, &task->linkNode);
+    listAddLast(&event->waitList, &task->linkNode);//注意waitList中仅保存linkNode，所以查看waitList是看不到具体是哪个task的。
+                                                    //除非查看该linkNode归属于哪个task
     
     // If set the timeout, then this task should also be added into the timeDelay list
     if (timeOut)

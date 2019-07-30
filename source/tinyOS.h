@@ -26,6 +26,7 @@ typedef enum
     ERROR_TIMEOUT = 1,
     ERROR_RSCNOTAVALIABLE = 2, 
     ERROR_NORESOURCE,
+    ERROR_OWNER,
 }errorNum;
 
 extern tTask * nextTask;
