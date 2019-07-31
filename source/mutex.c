@@ -158,4 +158,63 @@ uint32_t mutexNotify(tMuxte* mutex)
     return ERROR_NOERROR;
 }
 
+// Destroy the waiting list, but don't release this mutex(owner still owns this mutex)
+uint32_t mutexDestroy(tMuxte* mutex)
+{
+    uint32_t count;
+    uint32_t stats = tTaskEnterCritical();
+    
+    // Only when lockedCount > 0 then we need to destroy the waiting list
+    if (mutex->lockedCount > 0)
+    {
+        // If it ever happened prio inherite, then need to restore it because we will destroy all the tasks in waiting list.
+        if (mutex->owner->pri != mutex->ownerOriPri)
+        {
+            if (mutex->owner->state == TINYOS_TASK_STATE_RDY)
+            {
+                taskSchedUnReady(mutex->owner);
+                mutex->owner->pri = mutex->ownerOriPri;
+                taskSchedReady(mutex->owner);
+            }
+            else
+            {
+                mutex->owner->pri = mutex->ownerOriPri;
+            }
+        }
+        
+        count = eventRemoveAll(&mutex->event, (void*)0, ERROR_NOERROR);
+        
+        if (count > 0)
+        {
+            tTaskSched();
+        }
+    }
+    
+    tTaskExitCritical(stats);
+    return count;
+}
+
+void mutexInfoGet(tMuxte* mutex, tMutexInfo* mutexInfo)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    mutexInfo->waitCount = eventWaitCount(&mutex->event);
+    mutexInfo->lockedCount = mutex->lockedCount;
+
+    // because we will use owner->pri, so need to check owner is null.
+    if (mutex->owner != (tTask*)0)
+    {
+        mutexInfo->inheritedPri = mutex->owner->pri;
+    }
+    else
+    {
+        mutexInfo->inheritedPri = TINYOS_PRI_COUNT;
+    }
+
+    mutexInfo->ownerOriPri = mutex->ownerOriPri;
+    mutexInfo->owner = mutex->owner;
+
+    tTaskExitCritical(stats);
+}
+
 
