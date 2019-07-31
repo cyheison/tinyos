@@ -11,25 +11,32 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-tMuxte mutex;
+tTimer timer1;
+tTimer timer2;
+tTimer timer3;
+
+uint32_t bit1 = 0;
+uint32_t bit2 = 0;
+uint32_t bit3 = 0;
+
+void timerFunc(void* arg)
+{
+    uint32_t* ptrBit = (uint32_t*)arg;
+    *ptrBit ^= 0x1;//toggle its lowest bit
+}
 
 int task1Flag;
 void task1Entry(void* param)
 {    
-    tMutexInfo mutexInfo;
    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-    
-    mutexInit(&mutex);
-    
-    mutexWait(&mutex, 0); // This is will be success
-    
-    setTaskDelay(1); // switch to task2 
 
-    mutexInfoGet(&mutex, &mutexInfo);
-    
-    mutexDestroy(&mutex);
+    timerInit(&timer1, 100, 10, timerFunc, (void*)&bit1, TIMER_CONFIG_TYPE_HARD);//dealy 100ms to start timer, every 10ms timer irq,
 
+    timerInit(&timer2, 200, 20, timerFunc, (void*)&bit2, TIMER_CONFIG_TYPE_HARD);
+    
+    timerInit(&timer3, 300, 0, timerFunc, (void*)&bit3, TIMER_CONFIG_TYPE_SOFT);// only lasts for 300 ms, then this timer will be stopped
+    
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
@@ -47,8 +54,6 @@ void task1Entry(void* param)
 int task2Flag;
 void task2Entry(void *param)
 {   
-    mutexWait(&mutex, 0); // This is will be waiting and switch to task1
-
     
     for(;;)
     {
