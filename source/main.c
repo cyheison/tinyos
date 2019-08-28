@@ -223,7 +223,7 @@ int main()
  
     timerModuleInit();
     
-    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[TINYOS_STACK_SIZE]); // idle task的优先级是最低的：TINYOS_PRI_COUNT - 1
+    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, idleTaskEnv, TINYOS_STACK_SIZE); // idle task的优先级是最低的：TINYOS_PRI_COUNT - 1
        
     nextTask = findHighestPriTask();
     

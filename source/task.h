@@ -14,6 +14,9 @@ struct _tEvent;
 typedef struct
 {
     uint32_t*   stack;
+    uint32_t*   stackBase; // stack initial addr
+    uint32_t    stackSize; // total stack size
+    
     uint32_t    systemTickCount; // Delay ticks for this task
     tNode       linkNode; // tasks shoule be added into a list when they have same priority
     uint32_t    slice;    // When tasks have the same priority, slice number shows that how long they can occupy the CPU. Now the default time is 100ms  
@@ -43,9 +46,12 @@ typedef struct
     uint32_t state;
     uint32_t slice;
     uint32_t suspendCount;
+    
+    uint32_t stackSize; // total stack size
+    uint32_t stackFree; // idle stack size
 }tTaskInfo;
 
-void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uint32_t *stack);
+void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uint32_t *stack, uint32_t size); // Now the uint32_t* stack means the initial addr of stack;
 void taskSuspend(tTask* task);
 void timedTaskWakeUp(tTask* task);
 void taskRegisterCleanFunc(tTask* task, void (*clean)(void*), void* param);

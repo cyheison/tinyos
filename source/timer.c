@@ -196,6 +196,6 @@ void timerModuleInit(void)
     
     // 才开始我只用timerTaskStack，task没run的起来，现在改为&timerTaskStack[TINYOS_TIMERTASK_STACK_SIZE]则运行正常
     // 因为stask要从尾部传入！不能从头部传入，从尾部传入即大地址传入是一个向下生长的满栈
-    tTaskInit(&timerTask, timerSoftTask, (void*)0, TINYOS_TIMERTASK_PRI, &timerTaskStack[TINYOS_TIMERTASK_STACK_SIZE]);
+    tTaskInit(&timerTask, timerSoftTask, (void*)0, TINYOS_TIMERTASK_PRI, timerTaskStack, TINYOS_TIMERTASK_STACK_SIZE);
 }
 
