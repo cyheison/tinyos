@@ -200,6 +200,10 @@ void tTaskSystemTickHandler()
     
     tTaskExitCritical(status);
     
+    // check timer in hardList first, then in soft timer task check the other list
+    timerModuleNotify();
+
+    
     tTaskSched();
 }
 
@@ -217,7 +221,9 @@ int main()
     
     initApp();
  
-    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[TINYOS_STACK_SIZE]);
+    timerModuleInit();
+    
+    tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, &idleTaskEnv[TINYOS_STACK_SIZE]); // idle task的优先级是最低的：TINYOS_PRI_COUNT - 1
        
     nextTask = findHighestPriTask();
     

@@ -28,25 +28,32 @@ void timerFunc(void* arg)
 int task1Flag;
 void task1Entry(void* param)
 {    
-   
+    uint8_t stopped = 0;
+    
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
 
     timerInit(&timer1, 100, 10, timerFunc, (void*)&bit1, TIMER_CONFIG_TYPE_HARD);//dealy 100ms to start timer, every 10ms timer irq,
-
+    timerStart(&timer1);
     timerInit(&timer2, 200, 20, timerFunc, (void*)&bit2, TIMER_CONFIG_TYPE_HARD);
-    
+    timerStart(&timer2);
     timerInit(&timer3, 300, 0, timerFunc, (void*)&bit3, TIMER_CONFIG_TYPE_SOFT);// only lasts for 300 ms, then this timer will be stopped
-    
+    timerStart(&timer3);
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
-
         task1Flag = 0;
         // To make sure this task is running per the slice
         setTaskDelay(1);
         task1Flag = 1;
         setTaskDelay(1);
         
+        if (stopped == 0 )
+        {
+            setTaskDelay(200);
+            // stop timer1 first
+            timerStop(&timer1);
+            stopped = 1;
+        }
 
     }
 }

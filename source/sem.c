@@ -31,7 +31,7 @@ uint32_t semWait(tSem* sem, uint32_t waitTicks )
     }
     else
     {
-        eventAddWait(&sem->event, currentTask, (void*)0, 0, waitTicks);
+        eventAddWait(&sem->event, currentTask, (void*)0, 0, waitTicks);//waitTicks表示最多能等待多长时间，为0表示无限等待下去，无超时。
         tTaskExitCritical(status);
         
         tTaskSched();
