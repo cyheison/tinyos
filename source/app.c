@@ -19,6 +19,8 @@ uint32_t bit1 = 0;
 uint32_t bit2 = 0;
 uint32_t bit3 = 0;
 
+tTimerInfo timerInfo;
+
 void timerFunc(void* arg)
 {
     uint32_t* ptrBit = (uint32_t*)arg;
@@ -28,7 +30,7 @@ void timerFunc(void* arg)
 int task1Flag;
 void task1Entry(void* param)
 {    
-    uint8_t stopped = 0;
+    uint8_t destroyed = 0;
     
     tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
 
@@ -47,14 +49,15 @@ void task1Entry(void* param)
         task1Flag = 1;
         setTaskDelay(1);
         
-        if (stopped == 0 )
+        if (destroyed == 0 )
         {
             setTaskDelay(200);
             // stop timer1 first
-            timerStop(&timer1);
-            stopped = 1;
+            timerDestroy(&timer1);
+            destroyed = 1;
         }
-
+        
+        timerInfoGet(&timer2, &timerInfo);
     }
 }
 

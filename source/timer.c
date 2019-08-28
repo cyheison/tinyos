@@ -132,6 +132,27 @@ void timerStop(tTimer* timer)
     }
 }
 
+// 删除和停止的效果是一样的，这是一个简化的操作。
+void timerDestroy(tTimer* timer)
+{
+    timerStop(timer);
+    timer->state = tTimerDestroyed;
+}
+
+void timerInfoGet(tTimer* timer, tTimerInfo* info)
+{
+    uint32_t stats = tTaskEnterCritical();
+    
+    info->startDelayTicks = timer->startDelayTicks;
+    info->durationTicks = timer->durationTicks;
+    info->timerFuc = timer->timerFuc;
+    info->config = timer->config;
+    info->state = timer->state;
+    info->arg = timer->arg;
+    
+    tTaskExitCritical(stats);
+}
+
 // 遍历list(分为hard和soft的list)，查看该list中是否有timer到期了
 void timerHandleList(tList* timerList)
 {
@@ -156,7 +177,7 @@ void timerHandleList(tList* timerList)
                 listRemove(timerList, &timer->linkNode);
                 timer->state = tTimerStopped;
             }
-        }            
+        }
     }
 }
 
