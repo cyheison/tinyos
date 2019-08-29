@@ -19,8 +19,9 @@ uint8_t schedLockCount;
 uint8_t enableCpuUsageState;
 float cpuUsage; // 统计CPU的使用率
 
+#if TINYOS_ENABLE_CPUUSAGE_STAT
 void cpuCheckUsage(void);
-
+#endif
 
 void tTaskSchedInit()
 {
@@ -206,18 +207,22 @@ void tTaskSystemTickHandler()
             currentTask->slice = TINYOS_TASK_CLICE_COUNT;
         }
     }
-    
+
+#if TINYOS_ENABLE_CPUUSAGE_STAT    
     cpuCheckUsage();
+#endif    
     
     tTaskExitCritical(status);
-    
+ 
+#if TINYOS_ENABLE_TIMER    
     // check timer in hardList first, then in soft timer task check the other list
     timerModuleNotify();
-
+#endif
     
     tTaskSched();
 }
 
+#if TINYOS_ENABLE_CPUUSAGE_STAT
 void cpuUsageInitState()
 {
     enableCpuUsageState = 0;
@@ -276,6 +281,7 @@ float cpuUsageInfoGet(void)
     
     return usage;
 }
+#endif 
 
 void idleTaskEntry(void* param)
 {
@@ -284,14 +290,18 @@ void idleTaskEntry(void* param)
     
     // 初始化task的init都放在这里，等idle task计算完运行时间后，再去启动这些task。
     initApp();
-    
+ 
+#if TINYOS_ENABLE_TIMER     
     timerModuleTaskInit();
-
-    tSetSysTickPeriod(TINYOS_SYSTICK_MS);// Every 10ms we will get a sysTick interrupt
+#endif
     
+    tSetSysTickPeriod(TINYOS_SYSTICK_MS);// Every 10ms we will get a sysTick interrupt
+  
+#if TINYOS_ENABLE_CPUUSAGE_STAT    
     // 时钟同步：在systick开始时，我们的idleCount也开始++，这样CPU的运行时间统计的更准确一些。如果在systick中间开始统计，则误差较大。
     cpuUsageSyncWithSysTick();
-
+#endif
+    
     // 统计idle任务的运行时间
     for(;;)
     { 
@@ -305,12 +315,16 @@ int main()
 {
     // Init the sched lock
     tTaskSchedInit();
- 
+    
+#if TINYOS_ENABLE_TIMER 
     timerModuleInit();
+#endif
     
     timerTickInit();//这是时间相关的，所以单独拎出来
-    
+ 
+#if TINYOS_ENABLE_CPUUSAGE_STAT    
     cpuUsageInitState();
+#endif    
     
     tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, idleTaskEnv, TINYOS_STACK_SIZE); // idle task的优先级是最低的：TINYOS_PRI_COUNT - 1
        

@@ -1,5 +1,6 @@
 #include "tinyos.h"
 
+#if TINYOS_ENABLE_MEMBLOCK
 void memBlockInit(tMemBlock* memBlock, uint8_t* memStart, uint32_t blockSize, uint32_t blockCount)
 {
     // 这里的memStart只需要一个数组的首地址，所以有三种方式可以传进来。
@@ -122,4 +123,5 @@ uint32_t memBlockDestroy(tMemBlock* memBlock)
     
     return count;
 }
+#endif
 

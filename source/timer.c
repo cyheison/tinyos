@@ -1,5 +1,6 @@
 #include "timer.h"
 
+#if TINYOS_ENABLE_TIMER
 static tList timerHardList;     // Hard timer list, only accessed in systick irq
 static tList timerSoftList;     // Soft timer list, accessed by soft timer task and other tasks, but in systick irq can't access this list
 static tSem  timerProtectSem;   // Used by timer task and other tasks to access timerSoftList
@@ -201,4 +202,5 @@ void timerModuleTaskInit()
     // 因为stask要从尾部传入！不能从头部传入，从尾部传入即大地址传入是一个向下生长的满栈
     tTaskInit(&timerTask, timerSoftTask, (void*)0, TINYOS_TIMERTASK_PRI, timerTaskStack, TINYOS_TIMERTASK_STACK_SIZE);
 }
+#endif 
 

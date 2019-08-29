@@ -11,7 +11,6 @@ uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
-float cpuUsageInfo = 0.0f;
 
 int task1Flag;
 void task1Entry(void* param)
@@ -21,11 +20,10 @@ void task1Entry(void* param)
     {          
         task1Flag = 0;
         // To make sure this task is running per the slice
-        //setTaskDelay(1);
+        setTaskDelay(1);
         task1Flag = 1;
-        //setTaskDelay(1);
-        
-        cpuUsageInfo = cpuUsageInfoGet();
+        setTaskDelay(1);
+
     }
 }
 
