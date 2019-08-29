@@ -156,6 +156,11 @@ void tTaskSched()
     if (currentTask != tempTask)
     {
         nextTask = tempTask;
+        
+#if TINYOS_ENABLE_HOOKS
+        hooksTaskSwitch(currentTask, nextTask); // 为什么在这里放钩子函数，不知道。。。。。。
+#endif
+        
         // In this function, currentTask will be assigned.
         taskSwitch();       
     }
@@ -217,6 +222,10 @@ void tTaskSystemTickHandler()
 #if TINYOS_ENABLE_TIMER    
     // check timer in hardList first, then in soft timer task check the other list
     timerModuleNotify();
+#endif
+    
+#if TINYOS_ENABLE_HOOKS
+    hookSysTick();
 #endif
     
     tTaskSched();
@@ -308,6 +317,10 @@ void idleTaskEntry(void* param)
         uint32_t stats = tTaskEnterCritical();
         idleCount++;
         tTaskExitCritical(stats);
+        
+#if TINYOS_ENABLE_HOOKS
+        hooksCpuIdle();
+#endif
     }
 }
 

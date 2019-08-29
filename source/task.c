@@ -47,6 +47,10 @@ void tTaskInit(tTask *task, void (*entry)(void*), void* param, uint32_t pri, uin
     nodeInit(&task->linkNode);
         
     taskSchedReady(task);
+    
+#if TINYOS_ENABLE_HOOKS
+    hooksTaskInit(task);
+#endif
 }
 
 void taskSuspend(tTask* task)

@@ -18,5 +18,6 @@
 #define TINYOS_ENABLE_MEMBLOCK          1
 #define TINYOS_ENABLE_TIMER             1
 #define TINYOS_ENABLE_CPUUSAGE_STAT     1
+#define TINYOS_ENABLE_HOOKS             1
 
 #endif
