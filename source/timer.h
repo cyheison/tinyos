@@ -49,6 +49,7 @@ void timerHandleList(tList* timerList);
 void timerModuleNotify(void);
 void timerInfoGet(tTimer* timer, tTimerInfo* info);
 void timerDestroy(tTimer* timer);
+void timerModuleTaskInit(void);
 
 
 #endif

@@ -21,6 +21,9 @@
 #define mem32(addr)                 *(volatile uint32_t *)(addr)
 //#define mem8(addr)                  *(unsigned char *)(addr)
 
+#define TINYOS_SYSTICK_MS       10
+#define TICKS_PER_SEC           (1000 / TINYOS_SYSTICK_MS)
+
 typedef enum
 {   
     ERROR_NOERROR = 0,
@@ -56,6 +59,7 @@ void setTaskDelay(uint32_t delay);
 void taskWakeupFromSuspend(tTask* task);
 void taskDelayedDelete(tTask* task);
 void taskSchedDelete(tTask* task);
+float cpuUsageInfoGet(void);
 
 
 #endif

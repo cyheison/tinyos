@@ -5,34 +5,27 @@ tTask tTask2; // task2,3,4 will be added into the same event
 tTask tTask3;
 tTask tTask4; 
 
-tTaskInfo taskInfo1;
-tTaskInfo taskInfo2;
-tTaskInfo taskInfo3;
-tTaskInfo taskInfo4;
 
 uint32_t task1Env[1024];
 uint32_t task2Env[1024];
 uint32_t task3Env[1024];
 uint32_t task4Env[1024];
 
+float cpuUsageInfo = 0.0f;
 
 int task1Flag;
 void task1Entry(void* param)
 {    
-    
-    tSetSysTickPeriod(10);// Every 10ms we will get a sysTick interrupt
-
-
     // When task1 has been destroyed, then task1 can go here
     for(;;)
     {          
         task1Flag = 0;
         // To make sure this task is running per the slice
-        setTaskDelay(1);
+        //setTaskDelay(1);
         task1Flag = 1;
-        setTaskDelay(1);
+        //setTaskDelay(1);
         
-        taskInfoGet(&tTask1, &taskInfo1);
+        cpuUsageInfo = cpuUsageInfoGet();
     }
 }
 
@@ -49,7 +42,6 @@ void task2Entry(void *param)
         task2Flag = 1;
         setTaskDelay(1);
         
-        taskInfoGet(&tTask2, &taskInfo2);
     }   
 }
 
@@ -64,7 +56,6 @@ void task3Entry(void *param)
         task3Flag = 1;
         setTaskDelay(1);
         
-        taskInfoGet(&tTask3, &taskInfo3);
     }   
 }
 
@@ -79,7 +70,6 @@ void task4Entry(void *param)
         task4Flag = 1;
         setTaskDelay(1);
         
-        taskInfoGet(&tTask4, &taskInfo4);
     }   
 }
 

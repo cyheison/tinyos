@@ -188,7 +188,10 @@ void timerModuleInit(void)
     listInit(&timerSoftList);
     semInit(&timerProtectSem, 1, 1); // Only can get once
     semInit(&timerTickSem, 0, 0); // No count limit
-    
+}
+
+void timerModuleTaskInit()
+{
 // Add judgment for the timer stack pri must higher than idle task
 #if   TINYOS_TIMERTASK_PRI >= TINYOS_PRI_COUNT - 1
     #error "Timer task priority is not right"   // 这里只会在编译时报错。这样在编译时就可以发现代码错了

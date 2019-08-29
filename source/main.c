@@ -13,8 +13,13 @@ tTask tIdleTask;
 uint32_t idleTaskEnv[TINYOS_STACK_SIZE];
 
 uint32_t tickCount;
-
+uint32_t idleCount;
+uint32_t idleMaxCount;
 uint8_t schedLockCount;
+uint8_t enableCpuUsageState;
+float cpuUsage; // 统计CPU的使用率
+
+void cpuCheckUsage(void);
 
 
 void tTaskSchedInit()
@@ -157,13 +162,17 @@ void tTaskSched()
     tTaskExitCritical(status);
 }
 
+void timerTickInit()
+{
+    tickCount = 0;
+}
 
 void tTaskSystemTickHandler()
 {
     tNode* node;
     
     uint32_t status = tTaskEnterCritical();
-    
+        
     // Here only need to scan the tasks who need to delay. If tasks don't have delay, then we don't need to scan them
     for (node=delayList.node.nextNode; node!=&delayList.node; node=node->nextNode)
     {
@@ -198,6 +207,8 @@ void tTaskSystemTickHandler()
         }
     }
     
+    cpuCheckUsage();
+    
     tTaskExitCritical(status);
     
     // check timer in hardList first, then in soft timer task check the other list
@@ -207,21 +218,99 @@ void tTaskSystemTickHandler()
     tTaskSched();
 }
 
+void cpuUsageInitState()
+{
+    enableCpuUsageState = 0;
+    idleCount = 0;
+    idleMaxCount = 0;
+    cpuUsage = 0.0f;
+}
+
+// 检查cpu使用率的核心函数,在时间节拍中去调用
+void cpuCheckUsage(void)
+{
+    tickCount++;
+
+    if (enableCpuUsageState == 0)
+    {
+        enableCpuUsageState = 1;
+        // 开始统计tickCount
+        tickCount = 0;
+        return;
+    }
+    
+    // 第一秒时统计出idleMaxCount
+    if (tickCount == TICKS_PER_SEC)
+    {
+        idleMaxCount = idleCount;
+        // 开始下一轮的统计，这里已经统计到了最大的idleMaxCount
+        idleCount = 0;
+        
+        tTaskSchedEnable();
+    }
+    else if (tickCount % TICKS_PER_SEC == 0)
+    {
+        //以后的每一秒，都计算一下cpu的使用率
+        cpuUsage = 100 - idleCount  * 100.0 / idleMaxCount;
+        idleCount = 0; // 开始下一轮的计数
+    }
+}
+
+void cpuUsageSyncWithSysTick()
+{
+    // when systick didn't interrupt, we will wait here. Aim to Sync with the finish timestamp with systick
+    while (enableCpuUsageState == 0)
+    {
+        ;
+    }
+}
+
+float cpuUsageInfoGet(void)
+{
+    float usage = 0.0f;
+    uint32_t stats = tTaskEnterCritical();
+    
+    usage = cpuUsage;
+    
+    tTaskExitCritical(stats);
+    
+    return usage;
+}
+
 void idleTaskEntry(void* param)
 {
+    // 使用调度锁阻止任务调度，在第一次运行该idle entry时有效.禁掉别的task，只允许运行idle task，这样可以计算1s内最大systick数
+    tTaskSchedDisable();
+    
+    // 初始化task的init都放在这里，等idle task计算完运行时间后，再去启动这些task。
+    initApp();
+    
+    timerModuleTaskInit();
+
+    tSetSysTickPeriod(TINYOS_SYSTICK_MS);// Every 10ms we will get a sysTick interrupt
+    
+    // 时钟同步：在systick开始时，我们的idleCount也开始++，这样CPU的运行时间统计的更准确一些。如果在systick中间开始统计，则误差较大。
+    cpuUsageSyncWithSysTick();
+
+    // 统计idle任务的运行时间
     for(;;)
     { 
-    }    
+        uint32_t stats = tTaskEnterCritical();
+        idleCount++;
+        tTaskExitCritical(stats);
+    }
 }
 
 int main()
 {
     // Init the sched lock
     tTaskSchedInit();
-    
-    initApp();
  
     timerModuleInit();
+    
+    timerTickInit();//这是时间相关的，所以单独拎出来
+    
+    cpuUsageInitState();
     
     tTaskInit(&tIdleTask,   idleTaskEntry, (void*)0, TINYOS_PRI_COUNT - 1, idleTaskEnv, TINYOS_STACK_SIZE); // idle task的优先级是最低的：TINYOS_PRI_COUNT - 1
        
