@@ -389,6 +389,76 @@
               <FileType>1</FileType>
               <FilePath>.\source\switch.c</FilePath>
             </File>
+            <File>
+              <FileName>app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\app.c</FilePath>
+            </File>
+            <File>
+              <FileName>BitMap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\BitMap.c</FilePath>
+            </File>
+            <File>
+              <FileName>cpu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\cpu.c</FilePath>
+            </File>
+            <File>
+              <FileName>event.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\event.c</FilePath>
+            </File>
+            <File>
+              <FileName>flagGroup.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\flagGroup.c</FilePath>
+            </File>
+            <File>
+              <FileName>hooks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\hooks.c</FilePath>
+            </File>
+            <File>
+              <FileName>mBox.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\mBox.c</FilePath>
+            </File>
+            <File>
+              <FileName>memBlock.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\memBlock.c</FilePath>
+            </File>
+            <File>
+              <FileName>mutex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\mutex.c</FilePath>
+            </File>
+            <File>
+              <FileName>sem.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\sem.c</FilePath>
+            </File>
+            <File>
+              <FileName>task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\task.c</FilePath>
+            </File>
+            <File>
+              <FileName>time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\time.c</FilePath>
+            </File>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tList.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\source\tList.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
